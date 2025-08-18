@@ -1,0 +1,60 @@
+(.venv) D:\Joe\Develop\email-to-jira>python detect_emails.py
+Traceback (most recent call last):
+  File "D:\Joe\Develop\email-to-jira\detect_emails.py", line 129, in <module>
+    main()
+    ~~~~^^
+  File "D:\Joe\Develop\email-to-jira\detect_emails.py", line 87, in main
+    cfg = load_cfg()
+  File "D:\Joe\Develop\email-to-jira\detect_emails.py", line 9, in load_cfg
+    return yaml.safe_load(f)
+           ~~~~~~~~~~~~~~^^^
+  File "D:\Joe\Develop\email-to-jira\.venv\Lib\site-packages\yaml\__init__.py", line 125, in safe_load
+    return load(stream, SafeLoader)
+  File "D:\Joe\Develop\email-to-jira\.venv\Lib\site-packages\yaml\__init__.py", line 81, in load
+    return loader.get_single_data()
+           ~~~~~~~~~~~~~~~~~~~~~~^^
+  File "D:\Joe\Develop\email-to-jira\.venv\Lib\site-packages\yaml\constructor.py", line 49, in get_single_data
+    node = self.get_single_node()
+  File "D:\Joe\Develop\email-to-jira\.venv\Lib\site-packages\yaml\composer.py", line 36, in get_single_node
+    document = self.compose_document()
+  File "D:\Joe\Develop\email-to-jira\.venv\Lib\site-packages\yaml\composer.py", line 55, in compose_document
+    node = self.compose_node(None, None)
+  File "D:\Joe\Develop\email-to-jira\.venv\Lib\site-packages\yaml\composer.py", line 84, in compose_node
+    node = self.compose_mapping_node(anchor)
+  File "D:\Joe\Develop\email-to-jira\.venv\Lib\site-packages\yaml\composer.py", line 133, in compose_mapping_node
+    item_value = self.compose_node(node, item_key)
+  File "D:\Joe\Develop\email-to-jira\.venv\Lib\site-packages\yaml\composer.py", line 84, in compose_node
+    node = self.compose_mapping_node(anchor)
+  File "D:\Joe\Develop\email-to-jira\.venv\Lib\site-packages\yaml\composer.py", line 133, in compose_mapping_node
+    item_value = self.compose_node(node, item_key)
+  File "D:\Joe\Develop\email-to-jira\.venv\Lib\site-packages\yaml\composer.py", line 64, in compose_node
+    if self.check_event(AliasEvent):
+       ~~~~~~~~~~~~~~~~^^^^^^^^^^^^
+  File "D:\Joe\Develop\email-to-jira\.venv\Lib\site-packages\yaml\parser.py", line 98, in check_event
+    self.current_event = self.state()
+                         ~~~~~~~~~~^^
+  File "D:\Joe\Develop\email-to-jira\.venv\Lib\site-packages\yaml\parser.py", line 449, in parse_block_mapping_value
+    if not self.check_token(KeyToken, ValueToken, BlockEndToken):
+           ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Joe\Develop\email-to-jira\.venv\Lib\site-packages\yaml\scanner.py", line 116, in check_token
+    self.fetch_more_tokens()
+    ~~~~~~~~~~~~~~~~~~~~~~^^
+  File "D:\Joe\Develop\email-to-jira\.venv\Lib\site-packages\yaml\scanner.py", line 251, in fetch_more_tokens
+    return self.fetch_double()
+           ~~~~~~~~~~~~~~~~~^^
+  File "D:\Joe\Develop\email-to-jira\.venv\Lib\site-packages\yaml\scanner.py", line 655, in fetch_double
+    self.fetch_flow_scalar(style='"')
+    ~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^
+  File "D:\Joe\Develop\email-to-jira\.venv\Lib\site-packages\yaml\scanner.py", line 666, in fetch_flow_scalar
+    self.tokens.append(self.scan_flow_scalar(style))
+                       ~~~~~~~~~~~~~~~~~~~~~^^^^^^^
+  File "D:\Joe\Develop\email-to-jira\.venv\Lib\site-packages\yaml\scanner.py", line 1149, in scan_flow_scalar
+    chunks.extend(self.scan_flow_scalar_non_spaces(double, start_mark))
+                  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^
+  File "D:\Joe\Develop\email-to-jira\.venv\Lib\site-packages\yaml\scanner.py", line 1223, in scan_flow_scalar_non_spaces
+    raise ScannerError("while scanning a double-quoted scalar", start_mark,
+            "found unknown escape character %r" % ch, self.get_mark())
+yaml.scanner.ScannerError: while scanning a double-quoted scalar
+  in "config_detect.yaml", line 4, column 13
+found unknown escape character 'B'
+  in "config_detect.yaml", line 4, column 22

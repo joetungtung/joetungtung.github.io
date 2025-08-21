@@ -1,49 +1,205 @@
-(.venv) D:\Joe\Develop\email-to-jira>python detect_emails.py
-Traceback (most recent call last):
-  File "D:\Joe\Develop\email-to-jira\detect_emails.py", line 188, in <module>
-    main()
-    ~~~~^^
-  File "D:\Joe\Develop\email-to-jira\detect_emails.py", line 130, in main
+# -*- coding: utf-8 -*-
+import sys, io, re, time, yaml
+from datetime import timedelta
+from exchangelib import (
+    Credentials, Account, Configuration, DELEGATE, NTLM,
+    EWSDateTime, EWSTimeZone
+)
+from exchangelib.errors import TransportError, ErrorServerBusy, RateLimitError
+
+# ========= 基本設定 =========
+TPE = EWSTimeZone.localzone()   # 你的本地時區
+
+# ---------- 小工具 ----------
+def _safe_str(x):
+    try:
+        return "" if x is None else str(x)
+    except Exception:
+        return "<unreadable>"
+
+def pad(s, n):
+    s = str(s or "")
+    return s[: n-1] + "…" if len(s) > n else s.ljust(n)
+
+def field(txt):
+    return (txt or "").strip()
+
+def any_substr(haystack: str, needles):
+    if not needles: return False
+    h = (haystack or "").lower()
+    return any((n or "").lower() in h for n in needles if n)
+
+def any_regex(text: str, patterns):
+    if not patterns: return False
+    for pat in patterns:
+        if not pat: continue
+        if re.search(pat, text or "", flags=re.I):
+            return True
+    return False
+
+def body_text(item):
+    try:
+        return (item.text_body or item.body or "").strip()
+    except Exception:
+        return (item.body or "").strip()
+
+# ---------- 載入 config ----------
+def load_cfg(path="config_detect.yaml"):
+    with io.open(path, "r", encoding="utf-8") as f:
+        return yaml.safe_load(f)
+
+# ---------- 連線 ----------
+def connect_ews(e):
+    creds = Credentials(username=e["username"], password=e["password"])
+    conf  = Configuration(service_endpoint=e["service_endpoint"],
+                          credentials=creds, auth_type=NTLM)
+
+    ps = e.get("primary_smtp_address")
+    if not ps:
+        ps = e["username"] if "@" in e["username"] else None
+    if not ps or "@" not in ps:
+        raise ValueError("請於 exchange.primary_smtp_address 填你的 email (如 joe.tung@linebank.com.tw)")
+
+    acct = Account(primary_smtp_address=ps, autodiscover=False,
+                   config=conf, access_type=DELEGATE)
+    return acct
+
+# ---------- 路徑解析：支援 收件匣/Notice/Dynatrace ----------
+def get_folder_by_path(account, path_str: str):
+    """逐層比對資料夾；若中途找不到，會嘗試全樹救援比對名稱"""
+    def norm(s: str) -> str:
+        return (s or "").replace("／", "/").replace("\\", "/").replace(" ", "").casefold()
+
+    if not path_str or not str(path_str).strip():
+        return account.inbox
+
+    raw = str(path_str)
+    parts = [p.strip() for p in raw.replace("／", "/").split("/") if p.strip()]
+    inbox_display = account.inbox.name
+
+    # 起點
+    first = parts[0].casefold()
+    if first in ("inbox", inbox_display.casefold(), "收件匣"):
+        folder = account.inbox
+        parts = parts[1:]
+    else:
+        folder = account.msg_folder_root
+
+    # 逐層
+    for p in parts:
+        want = norm(p)
+        kids_raw = list(folder.children.all())
+        # 過濾出真資料夾
+        kids = [ch for ch in kids_raw
+                if hasattr(ch, "name") and (hasattr(ch, "children") or "Folder" in ch.__class__.__name__)]
+        match = None
+        for ch in kids:
+            if norm(getattr(ch, "name", "")) == want:
+                match = ch; break
+        if not match:
+            # 全樹救援
+            for f in account.root.walk():
+                if norm(getattr(f, "name", "")) == want:
+                    match = f; break
+        if not match:
+            raise RuntimeError(f"找不到子資料夾：{p}（上層：{getattr(folder,'name','?')}）")
+        folder = match
+
+    return folder
+
+# ---------- 規則判斷（先保留最小邏輯） ----------
+def decide(cfg, subj: str, body: str):
+    text = f"{subj}\n{body}"
+    # A) 若主旨/內文含 Jira Key
+    try:
+        pat_key = cfg["regex"]["issue_key"]
+        m = re.search(pat_key, text or "", flags=re.I)
+        if m:
+            return {"action":"LINK_BY_KEY", "issue_key":m.group(0), "priority":"", "reason":"包含Jira Key"}
+    except Exception:
+        pass
+    # B) 預設：先建立或搜尋
+    return {"action":"CREATE_OR_SEARCH", "issue_key":"", "priority":"", "reason":"非skip"}
+
+# ---------- 單一入口：撈信 + 表格輸出 ----------
+def run_query_and_print(folder, cfg, tz):
+    print("[step] 5. querying emails...", flush=True)
+    print("[debug] folder =", getattr(folder, "absolute", ""), "name=", folder.name)
+    print("[debug] class =", folder.__class__.__name__)
+    try:
+        print("[debug] total_count =", folder.total_count, "unread =", folder.unread_count)
+    except Exception:
+        pass
+
+    # 5.1 用 EWSDateTime + 時區做時間過濾（避免 .all()）
+    lookback_hours = int(cfg["dryrun"].get("lookback_hours", 24) or 0)
+    if lookback_hours <= 0:
+        lookback_hours = 24 * 90  # 0 則改為寬窗 90 天，避免 all()
+
+    since_ews = EWSDateTime.now(tz=tz) - timedelta(hours=lookback_hours)
+    print("[debug] since =", since_ews)
+
+    # 只排序＋限制回傳數（避免爆量）
+    qs = folder.filter(datetime_received__gte=since_ews).order_by("-datetime_received")
+
+    # 加重試，避免網路/節流波動
+    items = []
+    for attempt in range(1, 5):
+        try:
+            items = list(qs[: cfg["exchange"].get("max_emails_per_run", 100)])
+            break
+        except (TransportError, ErrorServerBusy, RateLimitError) as e:
+            wait = attempt * 2
+            print(f"[warn] EWS 暫時性錯誤({attempt}/4): {e}. {wait}s 後再試…", flush=True)
+            time.sleep(wait)
+    print(f"[step] 5.1 got {len(items)} items", flush=True)
+
+    # 5.2 表格輸出
+    items = sorted(items, key=lambda x: x.datetime_received, reverse=True)
+
+    print(pad("Date(TPE)", 20), pad("From", 28), pad("Subject", 64),
+          pad("Action", 16), pad("Key", 12), pad("Priority", 10), "Reason")
+    print("-"*160)
+
+    sk = cfg.get("skip", {})
+    for it in items:
+        dt   = it.datetime_received.astimezone(tz).strftime("%Y-%m-%d %H:%M:%S")
+        frm  = field(getattr(it.sender, "email_address", "")) or field(getattr(it.sender, "name", ""))
+        subj = field(it.subject)
+        body = body_text(it)
+
+        if (any_substr(subj, sk.get("subject_contains")) or any_regex(subj, sk.get("subject_regex")) or
+            any_substr(body, sk.get("body_contains")) or any_regex(body, sk.get("body_regex")) or
+            any_substr(frm,  sk.get("from_contains"))):
+            print(pad(dt,20), pad(frm,28), pad(subj,64),
+                  pad("SKIP",16), pad("",12), pad("",10), "命中 skip 規則")
+            continue
+
+        result = decide(cfg, subj, body)
+        print(pad(dt,20), pad(frm,28), pad(subj,64),
+              pad(result["action"],16), pad(result.get("issue_key",""),12),
+              pad(result.get("priority",""),10), "非skip")
+
+# ---------- main ----------
+def main():
+    print("[step] 1. loading config...", flush=True)
     cfg = load_cfg()
-  File "D:\Joe\Develop\email-to-jira\detect_emails.py", line 24, in load_cfg
-    return yaml.safe_load(f)
-           ~~~~~~~~~~~~~~^^^
-  File "D:\Joe\Develop\email-to-jira\.venv\Lib\site-packages\yaml\__init__.py", line 125, in safe_load
-    return load(stream, SafeLoader)
-  File "D:\Joe\Develop\email-to-jira\.venv\Lib\site-packages\yaml\__init__.py", line 81, in load
-    return loader.get_single_data()
-           ~~~~~~~~~~~~~~~~~~~~~~^^
-  File "D:\Joe\Develop\email-to-jira\.venv\Lib\site-packages\yaml\constructor.py", line 49, in get_single_data
-    node = self.get_single_node()
-  File "D:\Joe\Develop\email-to-jira\.venv\Lib\site-packages\yaml\composer.py", line 36, in get_single_node
-    document = self.compose_document()
-  File "D:\Joe\Develop\email-to-jira\.venv\Lib\site-packages\yaml\composer.py", line 55, in compose_document
-    node = self.compose_node(None, None)
-  File "D:\Joe\Develop\email-to-jira\.venv\Lib\site-packages\yaml\composer.py", line 84, in compose_node
-    node = self.compose_mapping_node(anchor)
-  File "D:\Joe\Develop\email-to-jira\.venv\Lib\site-packages\yaml\composer.py", line 133, in compose_mapping_node
-    item_value = self.compose_node(node, item_key)
-  File "D:\Joe\Develop\email-to-jira\.venv\Lib\site-packages\yaml\composer.py", line 84, in compose_node
-    node = self.compose_mapping_node(anchor)
-  File "D:\Joe\Develop\email-to-jira\.venv\Lib\site-packages\yaml\composer.py", line 127, in compose_mapping_node
-    while not self.check_event(MappingEndEvent):
-              ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
-  File "D:\Joe\Develop\email-to-jira\.venv\Lib\site-packages\yaml\parser.py", line 98, in check_event
-    self.current_event = self.state()
-                         ~~~~~~~~~~^^
-  File "D:\Joe\Develop\email-to-jira\.venv\Lib\site-packages\yaml\parser.py", line 428, in parse_block_mapping_key
-    if self.check_token(KeyToken):
-       ~~~~~~~~~~~~~~~~^^^^^^^^^^
-  File "D:\Joe\Develop\email-to-jira\.venv\Lib\site-packages\yaml\scanner.py", line 115, in check_token
-    while self.need_more_tokens():
-          ~~~~~~~~~~~~~~~~~~~~~^^
-  File "D:\Joe\Develop\email-to-jira\.venv\Lib\site-packages\yaml\scanner.py", line 152, in need_more_tokens
-    self.stale_possible_simple_keys()
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^
-  File "D:\Joe\Develop\email-to-jira\.venv\Lib\site-packages\yaml\scanner.py", line 291, in stale_possible_simple_keys
-    raise ScannerError("while scanning a simple key", key.mark,
-            "could not find expected ':'", self.get_mark())
-yaml.scanner.ScannerError: while scanning a simple key
-  in "config_detect.yaml", line 9, column 1
-could not find expected ':'
-  in "config_detect.yaml", line 14, column 4
+
+    print("[step] 2. connecting EWS...", flush=True)
+    acct = connect_ews(cfg["exchange"])
+    print("[step] 2.1 inbox.total_count =", acct.inbox.total_count, flush=True)
+
+    print("[step] 3. resolving mailbox...", flush=True)
+    box = cfg["exchange"].get("mailbox") or "INBOX"
+    print("[debug] mailbox from config =", repr(box), flush=True)
+    folder = get_folder_by_path(acct, box)
+    print(f"[info] Using mailbox: {box} (Resolved: {getattr(folder,'absolute','')})", flush=True)
+
+    # 只呼叫一次：撈信 + 表格輸出
+    run_query_and_print(folder, cfg, TPE)
+
+if __name__ == "__main__":
+    try:
+        main()
+    except KeyboardInterrupt:
+        sys.exit(0)

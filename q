@@ -1,64 +1,61 @@
-def main():
-    print("[step] 1. loading config...", flush=True)
-    cfg = load_cfg()
+from itertools import islice
 
-    print("[step] 2. connecting EWS...", flush=True)
-    acct = connect_ews(cfg["exchange"])
-    # 強制打一個輕量請求驗證連線
-    print("[step] 2.1 account.inbox.total_count =", acct.inbox.total_count, flush=True)
+def list_root_children_fast(account, out_path="root_children.txt", limit=200):
+    root = account.msg_folder_root
+    rows = ["=== Root children (fast) ==="]
+    try:
+        # 只拉 name 欄位、限制最多 N 個，避免卡太久
+        for ch in islice(root.children.only('name').all(), limit):
+            rows.append(f"- {_safe_str(getattr(ch,'name','<unknown>'))}")
+    except Exception as e:
+        rows.append(f"<error: {e}>")
+    with open(out_path, "w", encoding="utf-8") as f:
+        f.write("\n".join(rows))
+    print(f"[info] fast 根目錄第一層已輸出到 {out_path}")
 
-    print("[step] 3. dumping folder tree files...", flush=True)
-    dump_tree_to_file(acct, start="ROOT", max_depth=3, out_path="folder_tree_root.txt")
-    list_root_children(acct, out_path="root_children.txt")
-    search_folder(acct, "Notice", out_path="search_notice.txt")
 
-    print("[step] 4. resolving mailbox...", flush=True)
-    box = cfg["exchange"].get("mailbox") or "INBOX"
-    print("[debug] mailbox from config =", repr(box), flush=True)
-    folder = get_folder_by_path(acct, box)
-    print(f"[info] Using mailbox: {box} (resolved: {folder.absolute})", flush=True)
+def list_inbox_children_fast(account, out_path="inbox_children.txt", limit=200):
+    inbox = account.inbox
+    rows = ["=== Inbox children (fast) ==="]
+    try:
+        for ch in islice(inbox.children.only('name').all(), limit):
+            rows.append(f"- {_safe_str(getattr(ch,'name','<unknown>'))}")
+    except Exception as e:
+        rows.append(f"<error: {e}>")
+    with open(out_path, "w", encoding="utf-8") as f:
+        f.write("\n".join(rows))
+    print(f"[info] fast 收件匣第一層已輸出到 {out_path}")
 
-    print("[step] 5. querying emails...", flush=True)
-    lookback_hours = int(cfg["dryrun"].get("lookback_hours", 24) or 0)
-    if lookback_hours > 0:
-        since = datetime.now(TPE) - timedelta(hours=lookback_hours)
-        qs = folder.filter(datetime_received__gt=since).order_by("-datetime_received")
-    else:
-        qs = folder.all().order_by("-datetime_received")
 
-    items = list(qs)[: cfg["exchange"].get("max_emails_per_run", 100)]
-    print(f"[step] 5.1 got {len(items)} items", flush=True)
+def search_folder_fast(account, keyword, out_path="folder_search.txt", limit=5000):
+    """用 walk() 但只收集命中的項目，避免寫爆；limit 是最多檢視的節點數"""
+    kw = keyword.casefold()
+    rows = [f"=== Search '{keyword}' (fast) ==="]
+    seen = 0
+    try:
+        for f in account.root.walk():
+            seen += 1
+            if seen > limit:
+                rows.append(f"<hit limit {limit}>")
+                break
+            nm = _safe_str(getattr(f, "name", ""))
+            if kw in nm.casefold():
+                rows.append(f"- {nm}    {_safe_str(getattr(f,'absolute',''))}")
+    except Exception as e:
+        rows.append(f"<error: {e}>")
+    with open(out_path, "w", encoding="utf-8") as f:
+        f.write("\n".join(rows))
+    print(f"[info] fast 搜尋結果寫入 {out_path}")
 
-    # 表頭
-    print(pad("Date(UTC)", 20), pad("From", 28), pad("Subject", 64),
-          pad("Action", 16), pad("Key", 12), pad("Priority", 10), "Reason")
-    print("-"*160)
 
-    sk = cfg.get("skip", {})
-    # 若 lookback_hours=0，這行會用到未定義的 since，先保險判斷再用
-    if lookback_hours > 0:
-        items = sorted(folder.filter(datetime_received__gte=since),
-                       key=lambda x: x.datetime_received,
-                       reverse=True)
-    else:
-        items = items  # 保持 server 端新→舊排序
 
-    for it in items:
-        dt   = it.datetime_received.astimezone(TPE).strftime("%Y-%m-%d %H:%M:%S")
-        frm  = field(getattr(it.sender, "email_address", "")) or field(getattr(it.sender, "name", ""))
-        subj = field(it.subject)
-        body = body_text(it)
+print("[step] 3a. list root children (fast)...", flush=True)
+list_root_children_fast(acct, out_path="root_children.txt")
 
-        if any_substr(subj, sk.get("subject_contains")) or any_regex(subj, sk.get("subject_regex")) \
-           or any_substr(body, sk.get("body_contains")) or any_regex(body, sk.get("body_regex")) \
-           or any_substr(frm,  sk.get("from_contains")):
-            print(pad(dt,20), pad(frm,28), pad(subj,64), pad("SKIP",16),
-                  pad("",12), pad("",10), "命中 skip 規則")
-            continue
+print("[step] 3b. list inbox children (fast)...", flush=True)
+list_inbox_children_fast(acct, out_path="inbox_children.txt")
 
-        result = decide(cfg, subj, body)
-        print(pad(dt, 20), pad(frm, 28), pad(subj, 64),
-              pad(result["action"], 16), pad(result.get("issue_key", ""), 12),
-              pad(result.get("priority", ""), 10), "非skip")
-
-    print("[done] all steps finished.", flush=True)
+print("[step] 3c. search keyword (fast)...", flush=True)
+search_folder_fast(acct, "Notice", out_path="search_notice.txt")
+# 需要找 Dynatrace 就改成：
+# search_folder_fast(acct, "Dynatrace", out_path="search_dynatrace.txt")

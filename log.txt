@@ -1,0 +1,88 @@
+[MOVE] D:\Joe\Develop\GrafanaInfluxdb\Autoimport\incoming\Test_8-22-25 5-30-11 PM.csv -> D:\Joe\Develop\GrafanaInfluxdb\Autoimport\failed\Test_8-22-25 5-30-11 PM.csv
+[INGEST] D:\Joe\Develop\GrafanaInfluxdb\Autoimport\incoming\Test_8-22-25 5-25-11 PM.csv
+[DEBUG] columns: ['Name', 'Sum(Aggregated Event Count)']
+[ERROR] ingest failed: missing time column; tried: ['event_time', 'endTime', 'startTime', 'deviceReceiptTime', 'managerReceiptTime', 'Manager Receipt Time', 'Event Start Time', 'Event End Time']
+[MOVE] D:\Joe\Develop\GrafanaInfluxdb\Autoimport\incoming\Test_8-22-25 5-25-11 PM.csv -> D:\Joe\Develop\GrafanaInfluxdb\Autoimport\failed\Test_8-22-25 5-25-11 PM.csv
+[INGEST] D:\Joe\Develop\GrafanaInfluxdb\Autoimport\incoming\Test_8-22-25 5-20-11 PM.csv
+[DEBUG] columns: ['Name', 'Sum(Aggregated Event Count)']
+[ERROR] ingest failed: missing time column; tried: ['event_time', 'endTime', 'startTime', 'deviceReceiptTime', 'managerReceiptTime', 'Manager Receipt Time', 'Event Start Time', 'Event End Time']
+[MOVE] D:\Joe\Develop\GrafanaInfluxdb\Autoimport\incoming\Test_8-22-25 5-20-11 PM.csv -> D:\Joe\Develop\GrafanaInfluxdb\Autoimport\failed\Test_8-22-25 5-20-11 PM.csv
+[INGEST] D:\Joe\Develop\GrafanaInfluxdb\Autoimport\incoming\Test_8-22-25 5-15-11 PM.csv
+[DEBUG] columns: ['Name', 'Sum(Aggregated Event Count)']
+[ERROR] ingest failed: missing time column; tried: ['event_time', 'endTime', 'startTime', 'deviceReceiptTime', 'managerReceiptTime', 'Manager Receipt Time', 'Event Start Time', 'Event End Time']
+[MOVE] D:\Joe\Develop\GrafanaInfluxdb\Autoimport\incoming\Test_8-22-25 5-15-11 PM.csv -> D:\Joe\Develop\GrafanaInfluxdb\Autoimport\failed\Test_8-22-25 5-15-11 PM.csv
+[INGEST] D:\Joe\Develop\GrafanaInfluxdb\Autoimport\incoming\Test_8-22-25 5-10-11 PM.csv
+[DEBUG] columns: ['Name', 'Sum(Aggregated Event Count)']
+[ERROR] ingest failed: missing time column; tried: ['event_time', 'endTime', 'startTime', 'deviceReceiptTime', 'managerReceiptTime', 'Manager Receipt Time', 'Event Start Time', 'Event End Time']
+[MOVE] D:\Joe\Develop\GrafanaInfluxdb\Autoimport\incoming\Test_8-22-25 5-10-11 PM.csv -> D:\Joe\Develop\GrafanaInfluxdb\Autoimport\failed\Test_8-22-25 5-10-11 PM.csv
+[INGEST] D:\Joe\Develop\GrafanaInfluxdb\Autoimport\incoming\Test_8-22-25 5-05-11 PM.csv
+[DEBUG] columns: ['Name', 'Sum(Aggregated Event Count)']
+[ERROR] ingest failed: missing time column; tried: ['event_time', 'endTime', 'startTime', 'deviceReceiptTime', 'managerReceiptTime', 'Manager Receipt Time', 'Event Start Time', 'Event End Time']
+[MOVE] D:\Joe\Develop\GrafanaInfluxdb\Autoimport\incoming\Test_8-22-25 5-05-11 PM.csv -> D:\Joe\Develop\GrafanaInfluxdb\Autoimport\failed\Test_8-22-25 5-05-11 PM.csv
+[INGEST] D:\Joe\Develop\GrafanaInfluxdb\Autoimport\incoming\Test_8-22-25 5-00-11 PM.csv
+[DEBUG] columns: ['Name', 'Sum(Aggregated Event Count)']
+[ERROR] ingest failed: missing time column; tried: ['event_time', 'endTime', 'startTime', 'deviceReceiptTime', 'managerReceiptTime', 'Manager Receipt Time', 'Event Start Time', 'Event End Time']
+[MOVE] D:\Joe\Develop\GrafanaInfluxdb\Autoimport\incoming\Test_8-22-25 5-00-11 PM.csv -> D:\Joe\Develop\GrafanaInfluxdb\Autoimport\failed\Test_8-22-25 5-00-11 PM.csv
+[INGEST] D:\Joe\Develop\GrafanaInfluxdb\Autoimport\incoming\Test_8-22-25 4-55-11 PM.csv
+[DEBUG] columns: ['Name', 'Sum(Aggregated Event Count)']
+[ERROR] ingest failed: missing time column; tried: ['event_time', 'endTime', 'startTime', 'deviceReceiptTime', 'managerReceiptTime', 'Manager Receipt Time', 'Event Start Time', 'Event End Time']
+[MOVE] D:\Joe\Develop\GrafanaInfluxdb\Autoimport\incoming\Test_8-22-25 4-55-11 PM.csv -> D:\Joe\Develop\GrafanaInfluxdb\Autoimport\failed\Test_8-22-25 4-55-11 PM.csv
+[INGEST] D:\Joe\Develop\GrafanaInfluxdb\Autoimport\incoming\Test_8-22-25 4-50-11 PM.csv
+[DEBUG] columns: ['Name', 'Sum(Aggregated Event Count)']
+[ERROR] ingest failed: missing time column; tried: ['event_time', 'endTime', 'startTime', 'deviceReceiptTime', 'managerReceiptTime', 'Manager Receipt Time', 'Event Start Time', 'Event End Time']
+[MOVE] D:\Joe\Develop\GrafanaInfluxdb\Autoimport\incoming\Test_8-22-25 4-50-11 PM.csv -> D:\Joe\Develop\GrafanaInfluxdb\Autoimport\failed\Test_8-22-25 4-50-11 PM.csv
+[INGEST] D:\Joe\Develop\GrafanaInfluxdb\Autoimport\incoming\Test_8-22-25 4-45-11 PM.csv
+[DEBUG] columns: ['Name', 'Sum(Aggregated Event Count)']
+[ERROR] ingest failed: missing time column; tried: ['event_time', 'endTime', 'startTime', 'deviceReceiptTime', 'managerReceiptTime', 'Manager Receipt Time', 'Event Start Time', 'Event End Time']
+[MOVE] D:\Joe\Develop\GrafanaInfluxdb\Autoimport\incoming\Test_8-22-25 4-45-11 PM.csv -> D:\Joe\Develop\GrafanaInfluxdb\Autoimport\failed\Test_8-22-25 4-45-11 PM.csv
+[INGEST] D:\Joe\Develop\GrafanaInfluxdb\Autoimport\incoming\Test_8-22-25 4-40-11 PM.csv
+[DEBUG] columns: ['Name', 'Sum(Aggregated Event Count)']
+[ERROR] ingest failed: missing time column; tried: ['event_time', 'endTime', 'startTime', 'deviceReceiptTime', 'managerReceiptTime', 'Manager Receipt Time', 'Event Start Time', 'Event End Time']
+[MOVE] D:\Joe\Develop\GrafanaInfluxdb\Autoimport\incoming\Test_8-22-25 4-40-11 PM.csv -> D:\Joe\Develop\GrafanaInfluxdb\Autoimport\failed\Test_8-22-25 4-40-11 PM.csv
+[INGEST] D:\Joe\Develop\GrafanaInfluxdb\Autoimport\incoming\Test_8-22-25 4-35-11 PM.csv
+[DEBUG] columns: ['Name', 'Sum(Aggregated Event Count)']
+[ERROR] ingest failed: missing time column; tried: ['event_time', 'endTime', 'startTime', 'deviceReceiptTime', 'managerReceiptTime', 'Manager Receipt Time', 'Event Start Time', 'Event End Time']
+[MOVE] D:\Joe\Develop\GrafanaInfluxdb\Autoimport\incoming\Test_8-22-25 4-35-11 PM.csv -> D:\Joe\Develop\GrafanaInfluxdb\Autoimport\failed\Test_8-22-25 4-35-11 PM.csv
+[INGEST] D:\Joe\Develop\GrafanaInfluxdb\Autoimport\incoming\Test_8-22-25 4-30-11 PM.csv
+[DEBUG] columns: ['Name', 'Sum(Aggregated Event Count)']
+[ERROR] ingest failed: missing time column; tried: ['event_time', 'endTime', 'startTime', 'deviceReceiptTime', 'managerReceiptTime', 'Manager Receipt Time', 'Event Start Time', 'Event End Time']
+[MOVE] D:\Joe\Develop\GrafanaInfluxdb\Autoimport\incoming\Test_8-22-25 4-30-11 PM.csv -> D:\Joe\Develop\GrafanaInfluxdb\Autoimport\failed\Test_8-22-25 4-30-11 PM.csv
+[INGEST] D:\Joe\Develop\GrafanaInfluxdb\Autoimport\incoming\Test_8-22-25 4-25-11 PM.csv
+[DEBUG] columns: ['Name', 'Sum(Aggregated Event Count)']
+[ERROR] ingest failed: missing time column; tried: ['event_time', 'endTime', 'startTime', 'deviceReceiptTime', 'managerReceiptTime', 'Manager Receipt Time', 'Event Start Time', 'Event End Time']
+[MOVE] D:\Joe\Develop\GrafanaInfluxdb\Autoimport\incoming\Test_8-22-25 4-25-11 PM.csv -> D:\Joe\Develop\GrafanaInfluxdb\Autoimport\failed\Test_8-22-25 4-25-11 PM.csv
+[INGEST] D:\Joe\Develop\GrafanaInfluxdb\Autoimport\incoming\Test_8-22-25 4-20-11 PM.csv
+[DEBUG] columns: ['Name', 'Sum(Aggregated Event Count)']
+[ERROR] ingest failed: missing time column; tried: ['event_time', 'endTime', 'startTime', 'deviceReceiptTime', 'managerReceiptTime', 'Manager Receipt Time', 'Event Start Time', 'Event End Time']
+[MOVE] D:\Joe\Develop\GrafanaInfluxdb\Autoimport\incoming\Test_8-22-25 4-20-11 PM.csv -> D:\Joe\Develop\GrafanaInfluxdb\Autoimport\failed\Test_8-22-25 4-20-11 PM.csv
+[INGEST] D:\Joe\Develop\GrafanaInfluxdb\Autoimport\incoming\Test_8-22-25 4-15-11 PM.csv
+[DEBUG] columns: ['Name', 'Sum(Aggregated Event Count)']
+[ERROR] ingest failed: missing time column; tried: ['event_time', 'endTime', 'startTime', 'deviceReceiptTime', 'managerReceiptTime', 'Manager Receipt Time', 'Event Start Time', 'Event End Time']
+[MOVE] D:\Joe\Develop\GrafanaInfluxdb\Autoimport\incoming\Test_8-22-25 4-15-11 PM.csv -> D:\Joe\Develop\GrafanaInfluxdb\Autoimport\failed\Test_8-22-25 4-15-11 PM.csv
+[INGEST] D:\Joe\Develop\GrafanaInfluxdb\Autoimport\incoming\Test_8-22-25 4-10-11 PM.csv
+[DEBUG] columns: ['Name', 'Sum(Aggregated Event Count)']
+[ERROR] ingest failed: missing time column; tried: ['event_time', 'endTime', 'startTime', 'deviceReceiptTime', 'managerReceiptTime', 'Manager Receipt Time', 'Event Start Time', 'Event End Time']
+[MOVE] D:\Joe\Develop\GrafanaInfluxdb\Autoimport\incoming\Test_8-22-25 4-10-11 PM.csv -> D:\Joe\Develop\GrafanaInfluxdb\Autoimport\failed\Test_8-22-25 4-10-11 PM.csv
+[INGEST] D:\Joe\Develop\GrafanaInfluxdb\Autoimport\incoming\Test_8-22-25 4-05-11 PM.csv
+[DEBUG] columns: ['Name', 'Sum(Aggregated Event Count)']
+[ERROR] ingest failed: missing time column; tried: ['event_time', 'endTime', 'startTime', 'deviceReceiptTime', 'managerReceiptTime', 'Manager Receipt Time', 'Event Start Time', 'Event End Time']
+[MOVE] D:\Joe\Develop\GrafanaInfluxdb\Autoimport\incoming\Test_8-22-25 4-05-11 PM.csv -> D:\Joe\Develop\GrafanaInfluxdb\Autoimport\failed\Test_8-22-25 4-05-11 PM.csv
+[INGEST] D:\Joe\Develop\GrafanaInfluxdb\Autoimport\incoming\Test_8-22-25 4-00-11 PM.csv
+[DEBUG] columns: ['Name', 'Sum(Aggregated Event Count)']
+[ERROR] ingest failed: missing time column; tried: ['event_time', 'endTime', 'startTime', 'deviceReceiptTime', 'managerReceiptTime', 'Manager Receipt Time', 'Event Start Time', 'Event End Time']
+[MOVE] D:\Joe\Develop\GrafanaInfluxdb\Autoimport\incoming\Test_8-22-25 4-00-11 PM.csv -> D:\Joe\Develop\GrafanaInfluxdb\Autoimport\failed\Test_8-22-25 4-00-11 PM.csv
+[INGEST] D:\Joe\Develop\GrafanaInfluxdb\Autoimport\incoming\Test_8-22-25 3-55-11 PM.csv
+[DEBUG] columns: ['Name', 'Sum(Aggregated Event Count)']
+[ERROR] ingest failed: missing time column; tried: ['event_time', 'endTime', 'startTime', 'deviceReceiptTime', 'managerReceiptTime', 'Manager Receipt Time', 'Event Start Time', 'Event End Time']
+[MOVE] D:\Joe\Develop\GrafanaInfluxdb\Autoimport\incoming\Test_8-22-25 3-55-11 PM.csv -> D:\Joe\Develop\GrafanaInfluxdb\Autoimport\failed\Test_8-22-25 3-55-11 PM.csv
+[INGEST] D:\Joe\Develop\GrafanaInfluxdb\Autoimport\incoming\Test_8-22-25 3-50-11 PM.csv
+[DEBUG] columns: ['Name', 'Sum(Aggregated Event Count)']
+[ERROR] ingest failed: missing time column; tried: ['event_time', 'endTime', 'startTime', 'deviceReceiptTime', 'managerReceiptTime', 'Manager Receipt Time', 'Event Start Time', 'Event End Time']
+[MOVE] D:\Joe\Develop\GrafanaInfluxdb\Autoimport\incoming\Test_8-22-25 3-50-11 PM.csv -> D:\Joe\Develop\GrafanaInfluxdb\Autoimport\failed\Test_8-22-25 3-50-11 PM.csv
+[INGEST] D:\Joe\Develop\GrafanaInfluxdb\Autoimport\incoming\Test_8-22-25 3-45-11 PM.csv
+[DEBUG] columns: ['Name', 'Sum(Aggregated Event Count)']
+[ERROR] ingest failed: missing time column; tried: ['event_time', 'endTime', 'startTime', 'deviceReceiptTime', 'managerReceiptTime', 'Manager Receipt Time', 'Event Start Time', 'Event End Time']
+[MOVE] D:\Joe\Develop\GrafanaInfluxdb\Autoimport\incoming\Test_8-22-25 3-45-11 PM.csv -> D:\Joe\Develop\GrafanaInfluxdb\Autoimport\failed\Test_8-22-25 3-45-11 PM.csv
+[INGEST] D:\Joe\Develop\GrafanaInfluxdb\Autoimport\incoming\Test_8-22-25 3-40-11 PM.csv
+[ERROR] ingest failed: Could not determine delimiter
+[MOVE] D:\Joe\Develop\GrafanaInfluxdb\Autoimport\incoming\Test_8-22-25 3-40-11 PM.csv -> D:\Joe\Develop\GrafanaInfluxdb\Autoimport\failed\Test_8-22-25 3-40-11 PM.csv

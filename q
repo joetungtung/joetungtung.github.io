@@ -1,60 +1,84 @@
-# ===== STEP 5  最終合併版：撈信 + 表格輸出 =====
-from exchangelib import EWSDateTime, UTC  # 檔頭若未 import 要補
+import unicodedata, re  # 若已匯入就不用再加
 
-print("[step] 5. querying emails...", flush=True)
-print("[debug] folder =", folder.absolute, "name=", folder.name)
-print("[debug] class =", folder.__class__.__name__)
-print("[debug] total_count =", folder.total_count, "unread =", folder.unread_count)
+def _norm_name(s: str) -> str:
+    if s is None:
+        return ""
+    s = unicodedata.normalize("NFKC", str(s))
+    s = re.sub(r"\s+", "", s, flags=re.UNICODE)  # 移除所有空白(含NBSP/零寬)
+    s = s.replace("／", "/").replace("\\", "/")
+    return s.casefold()
 
-# 5.0 Probe：完全不加條件，列最新 10 封，確認真的能抓到
-try:
-    qs_probe = folder.all().order_by("-datetime_received")
-    probe_items = list(qs_probe[:10])
-    print(f"[debug] probe size = {len(probe_items)}")
-    for it in probe_items:
-        print("   ", it.datetime_received, "-", field(it.subject))
-except Exception as e:
-    print("[error] probing items failed:", e)
+def build_folder_index(account):
+    by_abs = {}
+    by_parent = {}
+    for f in account.root.walk():  # 只走資料夾
+        abs_path = getattr(f, "absolute", "") or ""
+        name = getattr(f, "name", "")
+        n_abs = _norm_name(abs_path)
+        n_name = _norm_name(name)
+        by_abs[n_abs] = f
+        parent_abs = "/".join(abs_path.split("/")[:-1]) if "/" in abs_path else ""
+        n_parent = _norm_name(parent_abs)
+        by_parent.setdefault(n_parent, {})[n_name] = f
+    return by_abs, by_parent
 
-# 5.1 正式查詢：用 EWSDateTime + TPE 做時間過濾（或 lookback_hours=0 表示不加時間條件）
-lookback_hours = int(cfg["dryrun"].get("lookback_hours", 24) or 0)
-if lookback_hours > 0:
-    since_ews = EWSDateTime.now(tz=TPE) - timedelta(hours=lookback_hours)  # ★注意：EWSDateTime，不是 EWSTimeZone
-    print("[debug] using time filter since(TPE|EWSDateTime) =", since_ews)
-    qs = folder.filter(datetime_received__gte=since_ews).order_by("-datetime_received")
-else:
-    qs = folder.all().order_by("-datetime_received")
 
-# 這裡一次把 items 取出來，以後都用這份，不要再重新查詢或使用未定義的 since 變數
-items = list(qs[: cfg["exchange"].get("max_emails_per_run", 100)])
-print(f"[step] 5.1 got {len(items)} items", flush=True)
 
-# 5.2 表格輸出（只對現有 items 做排序，不要再重抓）
-items = sorted(items, key=lambda x: x.datetime_received, reverse=True)
 
-print(pad("Date(TPE)", 20), pad("From", 28), pad("Subject", 64),
-      pad("Action", 16), pad("Key", 12), pad("Priority", 10), "Reason")
-print("-" * 160)
+def get_folder_by_path(account, path_str: str, idx=None):
+    if not path_str or not str(path_str).strip():
+        return account.inbox
 
-sk = cfg.get("skip", {})
+    # 取得索引（外面可先建好傳進來）
+    if idx is None:
+        by_abs, by_parent = build_folder_index(account)
+    else:
+        by_abs, by_parent = idx
 
-for it in items:
-    dt   = it.datetime_received.astimezone(TPE).strftime("%Y-%m-%d %H:%M:%S")
-    frm  = field(getattr(it.sender, "email_address", "")) or field(getattr(it.sender, "name", ""))
-    subj = field(it.subject)
-    body = body_text(it)
+    parts_raw = [p.strip() for p in str(path_str).replace("／", "/").split("/") if p.strip()]
+    inbox_display = _norm_name(account.inbox.name)
+    parts_norm = [_norm_name(p) for p in parts_raw]
 
-    # 命中 skip 就標示 SKIP
-    if (any_substr(subj, sk.get("subject_contains")) or any_regex(subj, sk.get("subject_regex")) or
-        any_substr(body, sk.get("body_contains")) or any_regex(body, sk.get("body_regex")) or
-        any_substr(frm,  sk.get("from_contains"))):
-        print(pad(dt,20), pad(frm,28), pad(subj,64),
-              pad("SKIP",16), pad("",12), pad("",10), "命中 skip 規則")
-        continue
+    # 起點：INBOX/收件匣 → inbox；否則 root
+    if parts_norm and parts_norm[0] in ("inbox", inbox_display, _norm_name("收件匣")):
+        current = account.inbox
+        cur_abs_n = _norm_name(getattr(current, "absolute", ""))
+        remain = parts_norm[1:]
+    else:
+        current = account.msg_folder_root
+        cur_abs_n = _norm_name(getattr(current, "absolute", ""))
+        remain = parts_norm
 
-    # 未略過 → 進入判斷
-    result = decide(cfg, subj, body)
-    print(pad(dt,20), pad(frm,28), pad(subj,64),
-          pad(result["action"],16), pad(result.get("issue_key",""),12),
-          pad(result.get("priority",""),10), "非skip")
-# ===== STEP 5 結束 =====
+    # 逐層用 parent 索引比對
+    for want in remain:
+        children = by_parent.get(cur_abs_n, {})
+        hit = children.get(want)
+        if not hit:
+            # 限縮在 inbox 子樹救援
+            inbox_abs_n = _norm_name(getattr(account.inbox, "absolute", ""))
+            candidates = []
+            for abs_n, folder in by_abs.items():
+                if abs_n.startswith(inbox_abs_n) and _norm_name(getattr(folder, "name", "")) == want:
+                    parent_abs = "/".join((getattr(folder, "absolute", "") or "").split("/")[:-1])
+                    if _norm_name(parent_abs) == cur_abs_n:
+                        candidates.append(folder)
+            if not candidates:
+                print(f"[錯誤] 在「{getattr(current,'absolute','')}」找不到：{parts_raw[len(parts_norm)-len(remain)]}")
+                print("  可用子資料夾：", ", ".join(sorted([getattr(v,'name','') for v in children.values()])))
+                raise RuntimeError("folder path segment not found")
+            hit = candidates[0]
+        current = hit
+        cur_abs_n = _norm_name(getattr(current, "absolute", ""))
+
+    return current
+
+
+
+
+print("[step] 2.9 building folder index…", flush=True)
+IDX = build_folder_index(acct)
+
+box = cfg["exchange"].get("mailbox") or "INBOX"
+folder = get_folder_by_path(acct, box, idx=IDX)  # ★ 多傳 idx=IDX
+print(f"[info] Using mailbox: {box} (Resolved: {getattr(folder,'absolute','')})", flush=True)
+

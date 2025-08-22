@@ -1,53 +1,53 @@
+# 原本：
+# qs = inbox.filter(is_read=False)
+# if FILTER_SENDER:
+#     qs = qs.filter(sender__email_address=FILTER_SENDER)   # <-- 這行會導致 InvalidField
+# if FILTER_SUBJ_KEYWORD:
+#     qs = qs.filter(subject__contains=FILTER_SUBJ_KEYWORD)
 
-(venv) D:\Joe\Develop\GrafanaInfluxdb\Autoimport>python ews_fetch.py
-Traceback (most recent call last):
-  File "D:\Joe\Develop\GrafanaInfluxdb\Autoimport\ews_fetch.py", line 85, in <module>
-    main()
-    ~~~~^^
-  File "D:\Joe\Develop\GrafanaInfluxdb\Autoimport\ews_fetch.py", line 56, in main
-    for item in qs.only("subject", "attachments", "datetime_received"):
-                ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "D:\Joe\Develop\GrafanaInfluxdb\Autoimport\venv\Lib\site-packages\exchangelib\queryset.py", line 270, in __iter__
-    yield from self._format_items(items=self._query(), return_format=self.return_format)
-  File "D:\Joe\Develop\GrafanaInfluxdb\Autoimport\venv\Lib\site-packages\exchangelib\queryset.py", line 345, in _item_yielder
-    for i in iterable:
-             ^^^^^^^^
-  File "D:\Joe\Develop\GrafanaInfluxdb\Autoimport\venv\Lib\site-packages\exchangelib\account.py", line 737, in fetch
-    yield from self._consume_item_service(
-    ...<7 lines>...
-    )
-  File "D:\Joe\Develop\GrafanaInfluxdb\Autoimport\venv\Lib\site-packages\exchangelib\account.py", line 426, in _consume_item_service
-    is_empty, items = peek(items)
-                      ~~~~^^^^^^^
-  File "D:\Joe\Develop\GrafanaInfluxdb\Autoimport\venv\Lib\site-packages\exchangelib\util.py", line 152, in peek
-    first = next(iterable)
-  File "D:\Joe\Develop\GrafanaInfluxdb\Autoimport\venv\Lib\site-packages\exchangelib\folders\collections.py", line 211, in find_items
-    yield from FindItem(account=self.account, page_size=page_size).call(
-    ...<10 lines>...
-    )
-  File "D:\Joe\Develop\GrafanaInfluxdb\Autoimport\venv\Lib\site-packages\exchangelib\services\common.py", line 216, in _elems_to_objs
-    for elem in elems:
-                ^^^^^
-  File "D:\Joe\Develop\GrafanaInfluxdb\Autoimport\venv\Lib\site-packages\exchangelib\services\common.py", line 801, in _paged_call
-    pages = self._get_pages(payload_func, kwargs, len(paging_infos))
-  File "D:\Joe\Develop\GrafanaInfluxdb\Autoimport\venv\Lib\site-packages\exchangelib\services\common.py", line 897, in _get_pages
-    payload = payload_func(**kwargs)
-  File "D:\Joe\Develop\GrafanaInfluxdb\Autoimport\venv\Lib\site-packages\exchangelib\services\find_item.py", line 106, in get_payload
-    payload.append(restriction.to_xml(version=self.account.version))
-                   ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "D:\Joe\Develop\GrafanaInfluxdb\Autoimport\venv\Lib\site-packages\exchangelib\restriction.py", line 564, in to_xml
-    return self.q.to_xml(folders=self.folders, version=version, applies_to=self.applies_to)
-           ~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "D:\Joe\Develop\GrafanaInfluxdb\Autoimport\venv\Lib\site-packages\exchangelib\restriction.py", line 358, in to_xml
-    elem = self.xml_elem(folders=folders, version=version, applies_to=applies_to)
-  File "D:\Joe\Develop\GrafanaInfluxdb\Autoimport\venv\Lib\site-packages\exchangelib\restriction.py", line 479, in xml_elem
-    elem.append(c.xml_elem(folders=folders, version=version, applies_to=applies_to))
-                ~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "D:\Joe\Develop\GrafanaInfluxdb\Autoimport\venv\Lib\site-packages\exchangelib\restriction.py", line 479, in xml_elem
-    elem.append(c.xml_elem(folders=folders, version=version, applies_to=applies_to))
-                ~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "D:\Joe\Develop\GrafanaInfluxdb\Autoimport\venv\Lib\site-packages\exchangelib\restriction.py", line 453, in xml_elem
-    field_path = self._get_field_path(folders, applies_to=applies_to, version=version)
-  File "D:\Joe\Develop\GrafanaInfluxdb\Autoimport\venv\Lib\site-packages\exchangelib\restriction.py", line 426, in _get_field_path
-    raise InvalidField(f"Unknown field path {self.field_path!r} on folders {folders}")
-exchangelib.fields.InvalidField: Unknown field path 'sender__email_address' on folders (Inbox(Root(<exchangelib.account.Account object at 0x0000023911519A90>, '[self]', 'root', 14, 0, 63, None, 'AAMkADViNTdiZGZmLTM0MTMtNGE4MC05YTVmLWJiMDFmNjdlMTRiMwAuAAAAAAB1FgzYM8D4Qo2HEfEffNL6AQDrsUVXp+/hSJY20/MkImfkAAAAAAEBAAA=', 'AQAAABYAAADrsUVXp+/hSJY20/MkImfkAAM3tWLz'), '收件匣', 31513, 336, 12, 'IPF.Note', 'AAMkADViNTdiZGZmLTM0MTMtNGE4MC05YTVmLWJiMDFmNjdlMTRiMwAuAAAAAAB1FgzYM8D4Qo2HEfEffNL6AQDrsUVXp+/hSJY20/MkImfkAAAAAAEMAAA=', 'AQAAABQAAAB7EVRe8wnGT77sapSzdsUfAAeQGg=='),)
+# 改成（只用伺服器端 is_read，其他在本地判斷）：
+qs = inbox.filter(is_read=False)
+
+saved_count = 0
+for item in qs.only("subject", "attachments", "datetime_received", "sender"):
+    # 本地過濾寄件者
+    if FILTER_SENDER:
+        try:
+            s = (item.sender.email_address or "").lower()
+        except Exception:
+            s = ""
+        if s != FILTER_SENDER.lower():
+            continue
+
+    # 本地過濾主旨關鍵字
+    if FILTER_SUBJ_KEYWORD:
+        if FILTER_SUBJ_KEYWORD.lower() not in (item.subject or "").lower():
+            continue
+
+    has_saved = False
+    for att in item.attachments:
+        from exchangelib import FileAttachment
+        if isinstance(att, FileAttachment):
+            name = (att.name or "").strip()
+            if name.lower().endswith(".csv"):
+                out_path = os.path.join(INCOMING_DIR, name)
+                base, ext = os.path.splitext(out_path)
+                idx = 1
+                while os.path.exists(out_path):
+                    out_path = f"{base}({idx}){ext}"
+                    idx += 1
+                with open(out_path, "wb") as f:
+                    f.write(att.content)
+                print(f"[SAVE] {name} -> {out_path}")
+                has_saved = True
+                saved_count += 1
+
+    if has_saved:
+        item.is_read = True
+        item.save()
+        # 若要搬移到 Inbox/ProcessedArcsight：
+        processed_folder = ensure_folder(account.inbox, ("ProcessedArcsight",))
+        try:
+            item.move(processed_folder)
+        except Exception as e:
+            print(f"[WARN] move failed: {e}")

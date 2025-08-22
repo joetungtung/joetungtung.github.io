@@ -1,84 +1,183 @@
-import unicodedata, re  # 若已匯入就不用再加
-
-def _norm_name(s: str) -> str:
-    if s is None:
-        return ""
-    s = unicodedata.normalize("NFKC", str(s))
-    s = re.sub(r"\s+", "", s, flags=re.UNICODE)  # 移除所有空白(含NBSP/零寬)
-    s = s.replace("／", "/").replace("\\", "/")
-    return s.casefold()
-
-def build_folder_index(account):
-    by_abs = {}
-    by_parent = {}
-    for f in account.root.walk():  # 只走資料夾
-        abs_path = getattr(f, "absolute", "") or ""
-        name = getattr(f, "name", "")
-        n_abs = _norm_name(abs_path)
-        n_name = _norm_name(name)
-        by_abs[n_abs] = f
-        parent_abs = "/".join(abs_path.split("/")[:-1]) if "/" in abs_path else ""
-        n_parent = _norm_name(parent_abs)
-        by_parent.setdefault(n_parent, {})[n_name] = f
-    return by_abs, by_parent
+jira:
+  base_url: "https://your-jira.local"      # 你們 Jira 的網址（on‑prem）
+  username: "jira_user"                     # 可用基本認證的帳號（或 PAT 使用者）
+  password: "jira_password_or_pat"          # 密碼或個人存取權杖
+  verify_cert: "C:/path/to/ca-bundle.pem"   # 企業憑證，若內網自簽；不需要可設 true
+  project_key: "TPPRD"                      # 你們專案的 key（用來 auto-create）
+  issuetype: "Incident"                      # 預設開單型別
+  labels: ["auto", "mailbot"]               # 預設加上的 labels
+  search_lookback_days: 30                  # 比對視窗（例如比對近 30 天內是否已開過）
+  dryrun_create: true                       # true=只查不開；確認 OK 再改成 false
 
 
 
 
-def get_folder_by_path(account, path_str: str, idx=None):
-    if not path_str or not str(path_str).strip():
-        return account.inbox
 
-    # 取得索引（外面可先建好傳進來）
-    if idx is None:
-        by_abs, by_parent = build_folder_index(account)
+
+
+
+import requests
+from datetime import datetime, timedelta
+
+# ---------- JIRA client ----------
+class JiraClient:
+    def __init__(self, cfg):
+        j = cfg["jira"]
+        self.base = j["base_url"].rstrip("/")
+        self.auth = (j.get("username"), j.get("password")) if j.get("username") else None
+        self.verify = j.get("verify_cert", True)
+        self.project_key = j.get("project_key")
+        self.issuetype = j.get("issuetype", "Task")
+        self.labels = j.get("labels", [])
+        self.lookback_days = int(j.get("search_lookback_days", 30))
+        self.dryrun_create = bool(j.get("dryrun_create", True))
+        self.session = requests.Session()
+        if self.auth:
+            self.session.auth = self.auth
+        self.session.verify = self.verify
+        self.session.headers.update({"Accept": "application/json", "Content-Type": "application/json"})
+
+    def _url(self, path):
+        return f"{self.base}{path}"
+
+    def get_issue(self, key):
+        r = self.session.get(self._url(f"/rest/api/2/issue/{key}"))
+        if r.status_code == 200:
+            return r.json()
+        return None
+
+    def search(self, jql, fields=("summary","status","created","priority","issuetype","reporter")):
+        data = {
+            "jql": jql,
+            "startAt": 0,
+            "maxResults": 50,
+            "fields": list(fields)
+        }
+        r = self.session.post(self._url("/rest/api/2/search"), json=data)
+        r.raise_for_status()
+        return r.json().get("issues", [])
+
+    def create_issue(self, summary, description, priority=None, assignee=None, extra_fields=None):
+        if self.dryrun_create:
+            print(f"[jira] DRYRUN would create: {summary}")
+            return None
+        fields = {
+            "project": {"key": self.project_key},
+            "summary": summary,
+            "description": description,
+            "issuetype": {"name": self.issuetype},
+            "labels": self.labels,
+        }
+        if priority:
+            fields["priority"] = {"name": priority}
+        if assignee:
+            fields["assignee"] = {"name": assignee}  # 若你們是雲端需用 accountId；on‑prem 多半用 name
+        if extra_fields:
+            fields.update(extra_fields)
+
+        r = self.session.post(self._url("/rest/api/2/issue"), json={"fields": fields})
+        r.raise_for_status()
+        return r.json()  # 包含 key
+
+
+
+
+
+
+
+
+
+def normalize_subject(subj: str) -> str:
+    s = (subj or "").strip()
+    # 把常見日期/時間/流水號移除，避免比對受干擾（依你們告警格式可再加規則）
+    s = re.sub(r"\b\d{4}/\d{1,2}/\d{1,2}\b", "", s)     # 2025/08/22
+    s = re.sub(r"\b\d{1,2}:\d{2}(:\d{2})?\b", "", s)    # 09:30 或 09:30:15
+    s = re.sub(r"\b\d{8,}\b", "", s)                    # 連號
+    s = re.sub(r"\s+", " ", s).strip()
+    return s
+
+def make_jql_from_email(cfg, subj: str, body: str) -> str:
+    """
+    基本策略：以標題為主、輔以 body 關鍵詞，限制在某專案、某段期間內。
+    """
+    j = cfg["jira"]
+    project = j["project_key"]
+    lookback_days = int(j.get("search_lookback_days", 30))
+    since = (datetime.now() - timedelta(days=lookback_days)).strftime("%Y-%m-%d")  # Jira JQL 用系統時區即可
+    ns = normalize_subject(subj)
+
+    # 用 quotes 包起來避免被 JQL 解析成多詞
+    terms = []
+    if ns:
+        terms.append(f'text ~ "\\"{ns}\\""')
+    # 可選：從 body 擷取一兩個穩定關鍵字（例如 Dynatrace 主機或 component 名）
+    host = match_one(r"host[:=]\s*([A-Za-z0-9._-]+)", body)
+    if host:
+        terms.append(f'text ~ "\\"{host}\\""')
+
+    base = f'project = {project} AND created >= "{since}"'
+    if terms:
+        base += " AND " + " AND ".join(terms)
+
+    # 你也可以加 issuetype 限制、排除已關閉等
+    # base += ' AND statusCategory != Done'
+    return base
+
+
+
+
+
+
+
+
+
+# ---- 沒被略過：先依規則判斷（result["action"] 會是 LINK_BY_KEY 或 CREATE_OR_SEARCH）----
+result = decide(cfg, subj, body)
+
+issue_key = result.get("issue_key", "").strip()
+final_action = result["action"]
+jira_link = ""
+
+if issue_key:
+    # 直接用 Key 查
+    issue = jira.get_issue(issue_key)
+    if issue:
+        jira_link = f"{jira.base}/browse/{issue_key}"
+        final_action = "LINK_BY_KEY"
     else:
-        by_abs, by_parent = idx
+        # Key 看起來像，但 Jira 查不到 → 改走全文搜尋
+        issue_key = ""
+        final_action = "CREATE_OR_SEARCH"
 
-    parts_raw = [p.strip() for p in str(path_str).replace("／", "/").split("/") if p.strip()]
-    inbox_display = _norm_name(account.inbox.name)
-    parts_norm = [_norm_name(p) for p in parts_raw]
+if not issue_key:
+    # 用 JQL 搜索相似 issue
+    jql = make_jql_from_email(cfg, subj, body)
+    try:
+        candidates = jira.search(jql)
+    except Exception as e:
+        candidates = []
+        print("[jira] search failed:", e)
 
-    # 起點：INBOX/收件匣 → inbox；否則 root
-    if parts_norm and parts_norm[0] in ("inbox", inbox_display, _norm_name("收件匣")):
-        current = account.inbox
-        cur_abs_n = _norm_name(getattr(current, "absolute", ""))
-        remain = parts_norm[1:]
+    if candidates:
+        hit = candidates[0]
+        issue_key = hit["key"]
+        jira_link = f"{jira.base}/browse/{issue_key}"
+        final_action = "LINK_BY_SEARCH"
     else:
-        current = account.msg_folder_root
-        cur_abs_n = _norm_name(getattr(current, "absolute", ""))
-        remain = parts_norm
+        # 沒找到 → （乾跑 或 真開單）
+        summary = normalize_subject(subj)[:120] or subj[:120]
+        description = f"Auto-created from mail.\n\nSubject: {subj}\n\nBody:\n{body[:5000]}"
+        created = jira.create_issue(summary=summary, description=description,
+                                    priority=result.get("priority") or None)
+        if created and "key" in created:
+            issue_key = created["key"]
+            jira_link = f"{jira.base}/browse/{issue_key}"
+            final_action = "CREATED"
+        else:
+            # dryrun 或建立失敗
+            final_action = "CREATE_DRYRUN" if jira.dryrun_create else "CREATE_FAILED"
 
-    # 逐層用 parent 索引比對
-    for want in remain:
-        children = by_parent.get(cur_abs_n, {})
-        hit = children.get(want)
-        if not hit:
-            # 限縮在 inbox 子樹救援
-            inbox_abs_n = _norm_name(getattr(account.inbox, "absolute", ""))
-            candidates = []
-            for abs_n, folder in by_abs.items():
-                if abs_n.startswith(inbox_abs_n) and _norm_name(getattr(folder, "name", "")) == want:
-                    parent_abs = "/".join((getattr(folder, "absolute", "") or "").split("/")[:-1])
-                    if _norm_name(parent_abs) == cur_abs_n:
-                        candidates.append(folder)
-            if not candidates:
-                print(f"[錯誤] 在「{getattr(current,'absolute','')}」找不到：{parts_raw[len(parts_norm)-len(remain)]}")
-                print("  可用子資料夾：", ", ".join(sorted([getattr(v,'name','') for v in children.values()])))
-                raise RuntimeError("folder path segment not found")
-            hit = candidates[0]
-        current = hit
-        cur_abs_n = _norm_name(getattr(current, "absolute", ""))
-
-    return current
-
-
-
-
-print("[step] 2.9 building folder index…", flush=True)
-IDX = build_folder_index(acct)
-
-box = cfg["exchange"].get("mailbox") or "INBOX"
-folder = get_folder_by_path(acct, box, idx=IDX)  # ★ 多傳 idx=IDX
-print(f"[info] Using mailbox: {box} (Resolved: {getattr(folder,'absolute','')})", flush=True)
-
+# 最終列印
+print(pad(dt,20), pad(frm,28), pad(subj,64),
+      pad(final_action,16), pad(issue_key,12),
+      pad(result.get("priority",""),10), jira_link or "非skip")

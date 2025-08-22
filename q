@@ -1,84 +1,175 @@
-# C:\arcsight-data\ews_fetch.py
-import os
-from exchangelib import (
-    Credentials, Account, DELEGATE, Configuration, NTLM, FileAttachment, EWSTimeZone
-)
-from exchangelib.folders import Inbox
-from exchangelib.queryset import Q
 
-# ==== 依你環境修改 ====
-EMAIL    = "arcsight-reports@company.com"   # 收報表的信箱
-USERNAME = r"COMPANY\yourusername"          # 或者直接用 EMAIL 也行
-PASSWORD = "YourAppPassword"                # 建議用應用程式密碼
-EWS_URL  = "https://mail.company.com/EWS/Exchange.asmx"
+(venv) D:\Joe\Develop\GrafanaInfluxdb\Autoimport>python ews_fetch.py
+Traceback (most recent call last):
+  File "D:\Joe\Develop\GrafanaInfluxdb\Autoimport\venv\Lib\site-packages\cached_property.py", line 63, in __get__
+    return obj_dict[name]
+           ~~~~~~~~^^^^^^
+KeyError: 'inbox'
 
-INCOMING_DIR = r"C:\arcsight-data\incoming" # 這裡就是 arcsight_ingest.py 在看的資料夾
-PROCESSED_PATH = ("Processed", "ArcSight")  # 下載後要移動的郵件資料夾路徑（會自動建立）
+During handling of the above exception, another exception occurred:
 
-# 過濾條件（可留空）
-FILTER_SENDER = "arcsight@company.com"      # 只處理這個寄件者；空字串=不過濾
-FILTER_SUBJ_KEYWORD = "ArcSight"            # 主旨關鍵字；空字串=不過濾
-# ======================
+Traceback (most recent call last):
+  File "D:\Joe\Develop\GrafanaInfluxdb\Autoimport\venv\Lib\site-packages\cached_property.py", line 63, in __get__
+    return obj_dict[name]
+           ~~~~~~~~^^^^^^
+KeyError: 'root'
 
-def ensure_folder(account, path_tuple):
-    """確保子資料夾存在（例如 ('Processed','ArcSight') ）"""
-    folder = account.root
-    for name in path_tuple:
-        if name not in [f.name for f in folder.children]:
-            folder / name  # 觸發層級瀏覽
-            folder = folder.add_subfolder(name=name)
-        else:
-            folder = folder / name
-    return folder
+During handling of the above exception, another exception occurred:
 
-def main():
-    os.makedirs(INCOMING_DIR, exist_ok=True)
-
-    cfg = Configuration(server=EWS_URL, credentials=Credentials(USERNAME, PASSWORD), auth_type=NTLM)
-    account = Account(
-        primary_smtp_address=EMAIL,
-        config=cfg,
-        autodiscover=False,
-        access_type=DELEGATE,
+Traceback (most recent call last):
+  File "D:\Joe\Develop\GrafanaInfluxdb\Autoimport\venv\Lib\site-packages\urllib3\connection.py", line 198, in _new_conn
+    sock = connection.create_connection(
+        (self._dns_host, self.port),
+    ...<2 lines>...
+        socket_options=self.socket_options,
     )
+  File "D:\Joe\Develop\GrafanaInfluxdb\Autoimport\venv\Lib\site-packages\urllib3\util\connection.py", line 60, in create_connection
+    for res in socket.getaddrinfo(host, port, family, socket.SOCK_STREAM):
+               ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Joe\Develop\Python\Lib\socket.py", line 977, in getaddrinfo
+    for res in _socket.getaddrinfo(host, port, family, type, proto, flags):
+               ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+socket.gaierror: [Errno 11001] getaddrinfo failed
 
-    inbox: Inbox = account.inbox
-    qs = inbox.filter(is_read=False)  # 只抓未讀
-    if FILTER_SENDER:
-        qs = qs.filter(sender__email_address=FILTER_SENDER)
-    if FILTER_SUBJ_KEYWORD:
-        qs = qs.filter(subject__contains=FILTER_SUBJ_KEYWORD)
+The above exception was the direct cause of the following exception:
 
-    processed_folder = ensure_folder(account, PROCESSED_PATH)
-    saved_count = 0
+Traceback (most recent call last):
+  File "D:\Joe\Develop\GrafanaInfluxdb\Autoimport\venv\Lib\site-packages\urllib3\connectionpool.py", line 787, in urlopen
+    response = self._make_request(
+        conn,
+    ...<10 lines>...
+        **response_kw,
+    )
+  File "D:\Joe\Develop\GrafanaInfluxdb\Autoimport\venv\Lib\site-packages\urllib3\connectionpool.py", line 488, in _make_request
+    raise new_e
+  File "D:\Joe\Develop\GrafanaInfluxdb\Autoimport\venv\Lib\site-packages\urllib3\connectionpool.py", line 464, in _make_request
+    self._validate_conn(conn)
+    ~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "D:\Joe\Develop\GrafanaInfluxdb\Autoimport\venv\Lib\site-packages\urllib3\connectionpool.py", line 1093, in _validate_conn
+    conn.connect()
+    ~~~~~~~~~~~~^^
+  File "D:\Joe\Develop\GrafanaInfluxdb\Autoimport\venv\Lib\site-packages\urllib3\connection.py", line 753, in connect
+    self.sock = sock = self._new_conn()
+                       ~~~~~~~~~~~~~~^^
+  File "D:\Joe\Develop\GrafanaInfluxdb\Autoimport\venv\Lib\site-packages\urllib3\connection.py", line 205, in _new_conn
+    raise NameResolutionError(self.host, self, e) from e
+urllib3.exceptions.NameResolutionError: <urllib3.connection.HTTPSConnection object at 0x000001F9A717B8C0>: Failed to resolve 'https' ([Errno 11001] getaddrinfo failed)
 
-    for item in qs.only("subject", "attachments", "datetime_received"):
-        # 只處理 .csv 附件
-        has_saved = False
-        for att in item.attachments:
-            if isinstance(att, FileAttachment):
-                name = (att.name or "").strip()
-                if name.lower().endswith(".csv"):
-                    out_path = os.path.join(INCOMING_DIR, name)
-                    # 如同名檔案已存在，改名避免覆蓋
-                    base, ext = os.path.splitext(out_path)
-                    idx = 1
-                    while os.path.exists(out_path):
-                        out_path = f"{base}({idx}){ext}"
-                        idx += 1
-                    with open(out_path, "wb") as f:
-                        f.write(att.content)
-                    print(f"[SAVE] {name} -> {out_path}")
-                    has_saved = True
-                    saved_count += 1
+The above exception was the direct cause of the following exception:
 
-        if has_saved:
-            # 標已讀並移到 Processed/ArcSight
-            item.is_read = True
-            item.save()
-            item.move(processed_folder)
+Traceback (most recent call last):
+  File "D:\Joe\Develop\GrafanaInfluxdb\Autoimport\venv\Lib\site-packages\requests\adapters.py", line 644, in send
+    resp = conn.urlopen(
+        method=request.method,
+    ...<9 lines>...
+        chunked=chunked,
+    )
+  File "D:\Joe\Develop\GrafanaInfluxdb\Autoimport\venv\Lib\site-packages\urllib3\connectionpool.py", line 841, in urlopen
+    retries = retries.increment(
+        method, url, error=new_e, _pool=self, _stacktrace=sys.exc_info()[2]
+    )
+  File "D:\Joe\Develop\GrafanaInfluxdb\Autoimport\venv\Lib\site-packages\urllib3\util\retry.py", line 519, in increment
+    raise MaxRetryError(_pool, url, reason) from reason  # type: ignore[arg-type]
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+urllib3.exceptions.MaxRetryError: HTTPSConnectionPool(host='https', port=443): Max retries exceeded with url: /webmail.linebank.com.tw/EWS/Exchange.asmx/EWS/Exchange.asmx (Caused by NameResolutionError("<urllib3.connection.HTTPSConnection object at 0x000001F9A717B8C0>: Failed to resolve 'https' ([Errno 11001] getaddrinfo failed)"))
 
-    print(f"[DONE] saved {saved_count} csv file(s)")
+During handling of the above exception, another exception occurred:
 
-if __name__ == "__main__":
+Traceback (most recent call last):
+  File "D:\Joe\Develop\GrafanaInfluxdb\Autoimport\venv\Lib\site-packages\exchangelib\util.py", line 825, in post_ratelimited
+    r = session.post(**kwargs)
+  File "D:\Joe\Develop\GrafanaInfluxdb\Autoimport\venv\Lib\site-packages\requests\sessions.py", line 637, in post
+    return self.request("POST", url, data=data, json=json, **kwargs)
+           ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Joe\Develop\GrafanaInfluxdb\Autoimport\venv\Lib\site-packages\requests\sessions.py", line 589, in request
+    resp = self.send(prep, **send_kwargs)
+  File "D:\Joe\Develop\GrafanaInfluxdb\Autoimport\venv\Lib\site-packages\requests\sessions.py", line 703, in send
+    r = adapter.send(request, **kwargs)
+  File "D:\Joe\Develop\GrafanaInfluxdb\Autoimport\venv\Lib\site-packages\requests\adapters.py", line 677, in send
+    raise ConnectionError(e, request=request)
+requests.exceptions.ConnectionError: HTTPSConnectionPool(host='https', port=443): Max retries exceeded with url: /webmail.linebank.com.tw/EWS/Exchange.asmx/EWS/Exchange.asmx (Caused by NameResolutionError("<urllib3.connection.HTTPSConnection object at 0x000001F9A717B8C0>: Failed to resolve 'https' ([Errno 11001] getaddrinfo failed)"))
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "D:\Joe\Develop\GrafanaInfluxdb\Autoimport\venv\Lib\site-packages\exchangelib\version.py", line 202, in guess
+    list(ConvertId(protocol=protocol).call([AlternateId(id="DUMMY", format=EWS_ID, mailbox="DUMMY")], ENTRY_ID))
+    ~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Joe\Develop\GrafanaInfluxdb\Autoimport\venv\Lib\site-packages\exchangelib\services\common.py", line 216, in _elems_to_objs
+    for elem in elems:
+                ^^^^^
+  File "D:\Joe\Develop\GrafanaInfluxdb\Autoimport\venv\Lib\site-packages\exchangelib\services\common.py", line 279, in _chunked_get_elements
+    yield from self._get_elements(payload=payload_func(chunk, **kwargs))
+  File "D:\Joe\Develop\GrafanaInfluxdb\Autoimport\venv\Lib\site-packages\exchangelib\services\common.py", line 327, in _get_elements
+    raise e
+  File "D:\Joe\Develop\GrafanaInfluxdb\Autoimport\venv\Lib\site-packages\exchangelib\services\common.py", line 300, in _get_elements
+    yield from self._response_generator(payload=payload)
+               ~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+  File "D:\Joe\Develop\GrafanaInfluxdb\Autoimport\venv\Lib\site-packages\exchangelib\services\common.py", line 263, in _response_generator
+    response = self._get_response_xml(payload=payload)
+  File "D:\Joe\Develop\GrafanaInfluxdb\Autoimport\venv\Lib\site-packages\exchangelib\services\common.py", line 396, in _get_response_xml
+    r = self._get_response(payload=payload, api_version=api_version)
+  File "D:\Joe\Develop\GrafanaInfluxdb\Autoimport\venv\Lib\site-packages\exchangelib\services\common.py", line 347, in _get_response
+    r, session = post_ratelimited(
+                 ~~~~~~~~~~~~~~~~^
+        protocol=self.protocol,
+        ^^^^^^^^^^^^^^^^^^^^^^^
+    ...<8 lines>...
+        timeout=self.timeout or self.protocol.TIMEOUT,
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "D:\Joe\Develop\GrafanaInfluxdb\Autoimport\venv\Lib\site-packages\exchangelib\util.py", line 833, in post_ratelimited
+    raise ErrorTimeoutExpired(f"Reraised from {e.__class__.__name__}({e})")
+exchangelib.errors.ErrorTimeoutExpired: Reraised from ConnectionError(HTTPSConnectionPool(host='https', port=443): Max retries exceeded with url: /webmail.linebank.com.tw/EWS/Exchange.asmx/EWS/Exchange.asmx (Caused by NameResolutionError("<urllib3.connection.HTTPSConnection object at 0x000001F9A717B8C0>: Failed to resolve 'https' ([Errno 11001] getaddrinfo failed)")))
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "D:\Joe\Develop\GrafanaInfluxdb\Autoimport\ews_fetch.py", line 83, in <module>
     main()
+    ~~~~^^
+  File "D:\Joe\Develop\GrafanaInfluxdb\Autoimport\ews_fetch.py", line 44, in main
+    inbox: Inbox = account.inbox
+                   ^^^^^^^^^^^^^
+  File "D:\Joe\Develop\GrafanaInfluxdb\Autoimport\venv\Lib\site-packages\cached_property.py", line 67, in __get__
+    return obj_dict.setdefault(name, self.func(obj))
+                                     ~~~~~~~~~^^^^^
+  File "D:\Joe\Develop\GrafanaInfluxdb\Autoimport\venv\Lib\site-packages\exchangelib\account.py", line 303, in inbox
+    return self.root.get_default_folder(Inbox)
+           ^^^^^^^^^
+  File "D:\Joe\Develop\GrafanaInfluxdb\Autoimport\venv\Lib\site-packages\cached_property.py", line 67, in __get__
+    return obj_dict.setdefault(name, self.func(obj))
+                                     ~~~~~~~~~^^^^^
+  File "D:\Joe\Develop\GrafanaInfluxdb\Autoimport\venv\Lib\site-packages\exchangelib\account.py", line 367, in root
+    return Root.get_distinguished(account=self)
+           ~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^
+  File "D:\Joe\Develop\GrafanaInfluxdb\Autoimport\venv\Lib\site-packages\exchangelib\folders\roots.py", line 145, in get_distinguished
+    return cls._get_distinguished(
+           ~~~~~~~~~~~~~~~~~~~~~~^
+        folder=cls(
+        ^^^^^^^^^^^
+    ...<5 lines>...
+        )
+        ^
+    )
+    ^
+  File "D:\Joe\Develop\GrafanaInfluxdb\Autoimport\venv\Lib\site-packages\exchangelib\folders\base.py", line 226, in _get_distinguished
+    return cls.resolve(account=folder.account, folder=folder)
+           ~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Joe\Develop\GrafanaInfluxdb\Autoimport\venv\Lib\site-packages\exchangelib\folders\base.py", line 530, in resolve
+    folders = list(FolderCollection(account=account, folders=[folder]).resolve())
+  File "D:\Joe\Develop\GrafanaInfluxdb\Autoimport\venv\Lib\site-packages\exchangelib\folders\collections.py", line 334, in resolve
+    additional_fields = self.get_folder_fields(target_cls=self._get_target_cls())
+  File "D:\Joe\Develop\GrafanaInfluxdb\Autoimport\venv\Lib\site-packages\exchangelib\folders\collections.py", line 282, in get_folder_fields
+    for f in target_cls.supported_fields(version=self.account.version)
+                                                 ^^^^^^^^^^^^^^^^^^^^
+  File "D:\Joe\Develop\GrafanaInfluxdb\Autoimport\venv\Lib\site-packages\exchangelib\account.py", line 221, in version
+    self._version = self.protocol.version.copy()
+                    ^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Joe\Develop\GrafanaInfluxdb\Autoimport\venv\Lib\site-packages\exchangelib\protocol.py", line 480, in version
+    self.config.version = Version.guess(self, api_version_hint=self.api_version_hint)
+                          ~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Joe\Develop\GrafanaInfluxdb\Autoimport\venv\Lib\site-packages\exchangelib\version.py", line 206, in guess
+    raise TransportError(f"No valid version headers found in response ({e!r})")
+exchangelib.errors.TransportError: No valid version headers found in response (ErrorTimeoutExpired('Reraised from ConnectionError(HTTPSConnectionPool(host=\'https\', port=443): Max retries exceeded with url: /webmail.linebank.com.tw/EWS/Exchange.asmx/EWS/Exchange.asmx (Caused by NameResolutionError("<urllib3.connection.HTTPSConnection object at 0x000001F9A717B8C0>: Failed to resolve \'https\' ([Errno 11001] getaddrinfo failed)")))'))

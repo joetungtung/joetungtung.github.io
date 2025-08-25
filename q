@@ -1,53 +1,48 @@
-# 原本：
-# qs = inbox.filter(is_read=False)
-# if FILTER_SENDER:
-#     qs = qs.filter(sender__email_address=FILTER_SENDER)   # <-- 這行會導致 InvalidField
-# if FILTER_SUBJ_KEYWORD:
-#     qs = qs.filter(subject__contains=FILTER_SUBJ_KEYWORD)
+from datetime import timezone
+import pandas as pd
+import numpy as np
 
-# 改成（只用伺服器端 is_read，其他在本地判斷）：
-qs = inbox.filter(is_read=False)
+LOCAL_TZ = "Asia/Taipei"
 
-saved_count = 0
-for item in qs.only("subject", "attachments", "datetime_received", "sender"):
-    # 本地過濾寄件者
-    if FILTER_SENDER:
-        try:
-            s = (item.sender.email_address or "").lower()
-        except Exception:
-            s = ""
-        if s != FILTER_SENDER.lower():
-            continue
+def parse_time_series(xs: pd.Series) -> pd.Series:
+    s = xs.copy()
 
-    # 本地過濾主旨關鍵字
-    if FILTER_SUBJ_KEYWORD:
-        if FILTER_SUBJ_KEYWORD.lower() not in (item.subject or "").lower():
-            continue
+    # 數值型：epoch（秒/毫秒/微秒）
+    if np.issubdtype(s.dtype, np.number):
+        s = pd.to_numeric(s, errors="coerce")
+        # 判斷位數：秒(<=1e10), 毫秒(<=1e13), 微秒(>1e13)
+        sec   = s[(s > 1e9)  & (s <= 1e11)]
+        msec  = s[(s > 1e11) & (s <= 1e14)]
+        usec  = s[(s > 1e14)]
+        out = pd.Series(index=s.index, dtype="datetime64[ns, UTC]")
 
-    has_saved = False
-    for att in item.attachments:
-        from exchangelib import FileAttachment
-        if isinstance(att, FileAttachment):
-            name = (att.name or "").strip()
-            if name.lower().endswith(".csv"):
-                out_path = os.path.join(INCOMING_DIR, name)
-                base, ext = os.path.splitext(out_path)
-                idx = 1
-                while os.path.exists(out_path):
-                    out_path = f"{base}({idx}){ext}"
-                    idx += 1
-                with open(out_path, "wb") as f:
-                    f.write(att.content)
-                print(f"[SAVE] {name} -> {out_path}")
-                has_saved = True
-                saved_count += 1
+        if not sec.empty:
+            out.loc[sec.index]  = pd.to_datetime(sec, unit="s", utc=True, errors="coerce")
+        if not msec.empty:
+            out.loc[msec.index] = pd.to_datetime(msec, unit="ms", utc=True, errors="coerce")
+        if not usec.empty:
+            out.loc[usec.index] = pd.to_datetime(usec, unit="us", utc=True, errors="coerce")
+        return out
 
-    if has_saved:
-        item.is_read = True
-        item.save()
-        # 若要搬移到 Inbox/ProcessedArcsight：
-        processed_folder = ensure_folder(account.inbox, ("ProcessedArcsight",))
-        try:
-            item.move(processed_folder)
-        except Exception as e:
-            print(f"[WARN] move failed: {e}")
+    # 字串型：先嘗試 ArcSight 常見格式（AM/PM）
+    s = s.astype(str).str.strip()
+    # 例：8/27/25 5:30:11 PM 或 08/27/2025 17:30:11
+    try_formats = [
+        "%m/%d/%y %I:%M:%S %p",
+        "%m/%d/%Y %I:%M:%S %p",
+        "%Y-%m-%d %H:%M:%S",
+        "%Y/%m/%d %H:%M:%S",
+    ]
+    dt = pd.Series(pd.NaT, index=s.index, dtype="datetime64[ns]")
+    for fmt in try_formats:
+        mask = dt.isna()
+        if not mask.any():
+            break
+        dt.loc[mask] = pd.to_datetime(s[mask], format=fmt, errors="coerce")
+
+    # 剩下交給自動解析（最後手段）
+    dt = dt.fillna(pd.to_datetime(s, errors="coerce", utc=False))
+
+    # 指定為本地時區再轉 UTC（避免被當成 UTC 或其他時區）
+    dt = dt.dt.tz_localize(LOCAL_TZ, nonexistent="shift_forward", ambiguous="NaT", errors="coerce")
+    return dt.dt.tz_convert(timezone.utc)

@@ -1,43 +1,33 @@
-# delete_influx.py
-from influxdb_client import InfluxDBClient
-from datetime import datetime, timezone
+# 建議當 tag 的欄位（存在才用）。你可以依你的 CSV 欄名調整/擴充
+TAG_CANDIDATES = [
+    "src_ip", "dst_ip", "src_port", "dst_port",
+    "Attacker Address", "Target Address",
+    "Agent Name", "Agent ID", "Agent Severity",
+    "Device Vendor", "Device Product", "Device Action", "Protocol"
+]
 
-# === 必填：請換成你自己的 ===
-INFLUX_URL   = "http://127.0.0.1:8086"
-ORG          = "<你的orgID或org名稱>"   # 建議用 orgID
-TOKEN        = "<你的Token>"
-BUCKET       = "SOC"
+# 若你想把欄名統一成好讀的 key（可選）：
+# 例：把空白改底線，大小寫統一
+rename_map = {c: c.strip().replace(" ", "_") for c in TAG_CANDIDATES if c in df.columns}
+df = df.rename(columns=rename_map)
 
-def delete_measurement(measurement: str,
-                       start: str = "1970-01-01T00:00:00Z",
-                       stop: str  = "2100-01-01T00:00:00Z"):
-    """
-    刪除 bucket 內某個 measurement 在 start~stop 的所有資料。
-    start/stop 必須是 RFC3339 UTC 時間字串。
-    """
-    predicate = f'_measurement="{measurement}"'
-    with InfluxDBClient(url=INFLUX_URL, token=TOKEN, org=ORG) as client:
-        delete_api = client.delete_api()
-        delete_api.delete(start=start, stop=stop,
-                          predicate=predicate, bucket=BUCKET, org=ORG)
-    print(f"[DONE] Deleted measurement={measurement!r} in bucket={BUCKET!r} from {start} to {stop}")
+# 重新以改名後的集合決定 tag 欄位清單
+tag_cols = [rename_map.get(c, c) for c in TAG_CANDIDATES if rename_map.get(c, c) in df.columns]
 
-def delete_range_all(start: str, stop: str):
-    """
-    刪除 bucket 在 start~stop 的所有資料（不限定 measurement）。
-    """
-    with InfluxDBClient(url=INFLUX_URL, token=TOKEN, org=ORG) as client:
-        client.delete_api().delete(start=start, stop=stop, bucket=BUCKET, org=ORG)
-    print(f"[DONE] Deleted ALL data in bucket={BUCKET!r} from {start} to {stop}")
+# 數值欄位型別（避免 422）
+for num_col in ["bytes", "src_port", "dst_port"]:
+    if num_col in df.columns:
+        df[num_col] = pd.to_numeric(df[num_col], errors="coerce").astype("float64")
 
-if __name__ == "__main__":
-    # 例1：刪掉 arcsight_event 全部資料
-    delete_measurement("arcsight_event")
 
-    # # 例2：只刪某個時間區間（UTC）
-    # delete_measurement("arcsight_event",
-    #                    start="2025-08-24T00:00:00Z",
-    #                    stop ="2025-08-25T00:00:00Z")
 
-    # # 例3：整桶清空某時段
-    # delete_range_all(start="1970-01-01T00:00:00Z", stop="2100-01-01T00:00:00Z")
+
+write_api.write(
+    bucket=BUCKET,
+    org=ORG,  # 建議用 orgID
+    record=df,
+    data_frame_measurement_name="arcsight_event",
+    data_frame_tag_columns=tag_cols,        # ← 就是這裡
+    data_frame_timestamp_column="event_ts"
+)
+print(f"[OK] wrote {len(df)} points to {BUCKET}/arcsight_event with tags={tag_cols}")

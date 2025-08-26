@@ -1,50 +1,23 @@
-from datetime import timedelta
-from exchangelib import Credentials, Configuration, Account, DELEGATE, EWSDateTime, EWSTimeZone, Inbox, Folder
-
-EWS_URL   = "https://webmail.linebank.com.tw/EWS/Exchange.asmx"
-USERNAME  = "<你的AD帳號>"
-PASSWORD  = "<你的密碼>"
-EMAIL     = "<你的信箱>"
-PROCESSED = "ProcessedArcsight"  # 你移動郵件的資料夾名稱
-KEEP_DAYS = 30
-
-def main():
-    creds = Credentials(USERNAME, PASSWORD)
-    config = Configuration(server=EWS_URL.replace("https://","").replace("/EWS/Exchange.asmx",""),
-                           credentials=creds, auth_type=None, service_endpoint=EWS_URL)
-    account = Account(primary_smtp_address=EMAIL, credentials=creds, autodiscover=False,
-                      config=config, access_type=DELEGATE)
-
-    tz = EWSTimeZone.timezone("Asia/Taipei")
-    cutoff = tz.localize(EWSDateTime.now() - timedelta(days=KEEP_DAYS))
-
-    processed = account.inbox / PROCESSED  # 你的子資料夾
-    qs = processed.all().filter(datetime_received__lt=cutoff)
-    total = qs.count()
-    print(f"[INFO] Deleting {total} old mails in {PROCESSED} before {cutoff} ...")
-
-    for item in qs.iterator(page_size=100):
-        item.delete()  # 若想先丟垃圾桶，用 item.soft_delete()
-    print("[DONE] EWS cleanup finished.")
-
-if __name__ == "__main__":
-    main()
-
-
-
-
-
+# purge_files.py
 import os, time
 from pathlib import Path
 
-FOLDER    = r"D:\Joe\Develop\GrafanaInfluxdb\Autoimport\processed"
-KEEP_DAYS = 30
+# === 要清的資料夾清單 ===
+FOLDERS   = [
+    r"D:\Joe\Develop\GrafanaInfluxdb\Autoimport\incoming",
+    r"D:\Joe\Develop\GrafanaInfluxdb\Autoimport\processed",
+    r"D:\Joe\Develop\GrafanaInfluxdb\Autoimport\failed"
+]
+KEEP_DAYS = 30   # 保留天數
 
-def main():
+def purge_folder(folder: str, keep_days: int):
     now = time.time()
-    cutoff = now - KEEP_DAYS * 86400
-    p = Path(FOLDER)
+    cutoff = now - keep_days * 86400
+    p = Path(folder)
     n = 0
+    if not p.exists():
+        print(f"[SKIP] {folder} 不存在")
+        return
     for f in p.glob("*"):
         try:
             if f.is_file() and f.stat().st_mtime < cutoff:
@@ -52,12 +25,11 @@ def main():
                 n += 1
         except Exception as e:
             print("[WARN]", f, e)
-    print(f"[DONE] Deleted {n} old files (> {KEEP_DAYS}d) in {FOLDER}")
+    print(f"[DONE] {folder} 刪除了 {n} 個舊檔案 (> {keep_days}d)")
+
+def main():
+    for folder in FOLDERS:
+        purge_folder(folder, KEEP_DAYS)
 
 if __name__ == "__main__":
     main()
-
-
-
-
-

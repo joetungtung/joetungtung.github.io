@@ -1,44 +1,80 @@
-# --- 2) 字串型（先正規化，再向量化解析；避免 dateutil fallback） ---
-import re
+def parse_time_series(xs: pd.Series) -> pd.Series:
+    """
+    把各種時間表示（epoch / 多種日期字串）轉成 UTC 的 pandas Series。
+    支援: 
+      - epoch 秒/毫秒/微秒
+      - 12h: 08/23/25 12:36:27 PM、08-23-25 12-36-27 PM
+      - 24h: 2025-08-23 17:36:27、2025/08/23 17:36:27
+      - 上述含毫秒 .fff
+    解析失敗的元素保留 NaT（上游會 dropna）。
+    """
+    s0 = xs  # 原始
+    # -------- 1) 數值型 epoch（優先）---------
+    if np.issubdtype(s0.dtype, np.number) or pd.to_numeric(s0, errors="coerce").notna().all():
+        v = pd.to_numeric(s0, errors="coerce")
+        out = pd.Series(pd.NaT, index=v.index, dtype="datetime64[ns, UTC]")
+        sec  = v[(v > 1e9)  & (v <= 1e11)]
+        msec = v[(v > 1e11) & (v <= 1e14)]
+        usec = v[(v > 1e14)]
+        if not sec.empty:  out.loc[sec.index]  = pd.to_datetime(sec,  unit="s",  utc=True, errors="coerce")
+        if not msec.empty: out.loc[msec.index] = pd.to_datetime(msec, unit="ms", utc=True, errors="coerce")
+        if not usec.empty: out.loc[usec.index] = pd.to_datetime(usec, unit="us", utc=True, errors="coerce")
+        return out
 
-s = s.astype(str).str.strip()
-out = pd.Series(pd.NaT, index=s.index, dtype="datetime64[ns, UTC]")
+    # -------- 2) 字串型（向量化 + 多格式 + fallback）---------
+    s = s0.astype(str).str.strip()
+    dt = pd.Series(pd.NaT, index=s.index, dtype="datetime64[ns]")  # 先做成「無時區」的
 
-# 先把明顯的「AM/PM 但用 - 作分隔」正規化成我們要的格式
-# 例如：8-23-25 12-36-27 PM  ->  8/23/25 12:36:27 PM
-mask_ampm = s.str.contains(r"\b(?:AM|PM)\b", case=False, na=False, regex=True)
-if mask_ampm.any():
-    s_ampm = s.where(mask_ampm)
-    # 日期  m-d-yy 或 m-d-yyyy  ->  m/d/yy 或 m/d/yyyy
-    s_ampm = s_ampm.str.replace(r"^(\d{1,2})-(\d{1,2})-(\d{2,4})", r"\1/\2/\3", regex=True)
-    # 時間  HH-MM-SS AM/PM     ->  HH:MM:SS AM/PM
-    s_ampm = s_ampm.str.replace(r"(\d{1,2})-(\d{2})-(\d{2})\s*(AM|PM)", r"\1:\2:\3 \4", regex=True, case=False)
+    # (a) AM/PM：同時支援 / 與 -，時間分隔 : 或 -
+    # 先把 - 形式正規化成 / 與 :
+    ampm_mask = s.str.contains(r"\b(?:AM|PM)\b", case=False, na=False, regex=True)
+    if ampm_mask.any():
+        sa = s.where(ampm_mask)
+        sa = sa.str.replace(r"^(\d{1,2})-(\d{1,2})-(\d{2,4})", r"\1/\2/\3", regex=True)
+        sa = sa.str.replace(r"(\d{1,2})-(\d{2})-(\d{2})\s*(AM|PM)", r"\1:\2:\3 \4", regex=True, case=False)
 
-    mY4 = pd.to_datetime(s_ampm, format="%m/%d/%Y %I:%M:%S %p", errors="coerce")
-    mY2 = pd.to_datetime(s_ampm, format="%m/%d/%y %I:%M:%S %p",  errors="coerce")
-    m = mY4.fillna(mY2)
-    if m.notna().any():
-        out.loc[m.notna()] = (
-            m[m.notna()]
-            .dt.tz_localize("Asia/Taipei")
-            .dt.tz_convert("UTC")
-        )
+        # 嘗試有/無 4 位年份、有/無毫秒
+        fmts_ampm = [
+            "%m/%d/%Y %I:%M:%S %p",
+            "%m/%d/%y %I:%M:%S %p",
+            "%m/%d/%Y %I:%M:%S.%f %p",
+            "%m/%d/%y %I:%M:%S.%f %p",
+        ]
+        tmp = pd.Series(pd.NaT, index=sa.index, dtype="datetime64[ns]")
+        for fmt in fmts_ampm:
+            mask = tmp.isna()
+            if not mask.any(): break
+            parsed = pd.to_datetime(sa.where(mask), format=fmt, errors="coerce")
+            tmp.loc[parsed.notna()] = parsed[parsed.notna()]
+        dt.loc[tmp.notna()] = tmp[tmp.notna()]
 
-# 其餘（沒有 AM/PM）的 24h 制（同樣可能用 / 或 -）
-mask_24h = ~mask_ampm
-if mask_24h.any():
-    s_24 = s.where(mask_24h)
-    # 常見兩種：2025-08-23 17:30:11、2025/08/23 17:30:11
-    # 如果時間用 - 分隔，先轉成 :
-    s_24 = s_24.str.replace(r"(\d{1,2})-(\d{2})-(\d{2})(?!\d)", r"\1:\2:\3", regex=True)
-    m1 = pd.to_datetime(s_24, format="%Y-%m-%d %H:%M:%S", errors="coerce")
-    m2 = pd.to_datetime(s_24, format="%Y/%m/%d %H:%M:%S", errors="coerce")
-    m = m1.fillna(m2)
-    if m.notna().any():
-        out.loc[m.notna()] = (
-            m[m.notna()]
-            .dt.tz_localize("Asia/Taipei")
-            .dt.tz_convert("UTC")
-        )
+    # (b) 24h：- 或 /，有/無毫秒
+    mask24 = dt.isna()  # 尚未成功者
+    if mask24.any():
+        s24 = s.where(mask24)
+        # 如果時間用 - 分隔，把 HH-MM-SS 轉回 HH:MM:SS（避免誤動到日期）
+        s24 = s24.str.replace(r"(\s\d{1,2})-(\d{2})-(\d{2})\b", r"\1:\2:\3", regex=True)
+        fmts_24 = [
+            "%Y-%m-%d %H:%M:%S", "%Y/%m/%d %H:%M:%S",
+            "%m/%d/%Y %H:%M:%S", "%m-%d-%Y %H:%M:%S",
+            "%Y-%m-%d %H:%M:%S.%f", "%Y/%m/%d %H:%M:%S.%f",
+            "%m/%d/%Y %H:%M:%S.%f", "%m-%d-%Y %H:%M:%S.%f",
+        ]
+        for fmt in fmts_24:
+            mask = dt.isna()
+            if not mask.any(): break
+            parsed = pd.to_datetime(s24.where(mask), format=fmt, errors="coerce")
+            dt.loc[parsed.notna()] = parsed[parsed.notna()]
 
-return out
+    # (c) 落網之魚：通用 fallback（速度仍可接受，rows~萬級OK）
+    still = dt.isna()
+    if still.any():
+        parsed = pd.to_datetime(s.where(still), errors="coerce", cache=True)
+        dt.loc[parsed.notna()] = parsed[parsed.notna()]
+
+    # 全部視為本地時間（台北），再轉 UTC
+    out = pd.Series(pd.NaT, index=dt.index, dtype="datetime64[ns, UTC]")
+    ok = dt.notna()
+    if ok.any():
+        out.loc[ok] = dt.loc[ok].dt.tz_localize("Asia/Taipei").dt.tz_convert("UTC")
+    return out

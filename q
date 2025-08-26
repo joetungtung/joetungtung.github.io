@@ -1,33 +1,63 @@
-# 建議當 tag 的欄位（存在才用）。你可以依你的 CSV 欄名調整/擴充
-TAG_CANDIDATES = [
-    "src_ip", "dst_ip", "src_port", "dst_port",
-    "Attacker Address", "Target Address",
-    "Agent Name", "Agent ID", "Agent Severity",
-    "Device Vendor", "Device Product", "Device Action", "Protocol"
-]
+from datetime import timedelta
+from exchangelib import Credentials, Configuration, Account, DELEGATE, EWSDateTime, EWSTimeZone, Inbox, Folder
 
-# 若你想把欄名統一成好讀的 key（可選）：
-# 例：把空白改底線，大小寫統一
-rename_map = {c: c.strip().replace(" ", "_") for c in TAG_CANDIDATES if c in df.columns}
-df = df.rename(columns=rename_map)
+EWS_URL   = "https://webmail.linebank.com.tw/EWS/Exchange.asmx"
+USERNAME  = "<你的AD帳號>"
+PASSWORD  = "<你的密碼>"
+EMAIL     = "<你的信箱>"
+PROCESSED = "ProcessedArcsight"  # 你移動郵件的資料夾名稱
+KEEP_DAYS = 30
 
-# 重新以改名後的集合決定 tag 欄位清單
-tag_cols = [rename_map.get(c, c) for c in TAG_CANDIDATES if rename_map.get(c, c) in df.columns]
+def main():
+    creds = Credentials(USERNAME, PASSWORD)
+    config = Configuration(server=EWS_URL.replace("https://","").replace("/EWS/Exchange.asmx",""),
+                           credentials=creds, auth_type=None, service_endpoint=EWS_URL)
+    account = Account(primary_smtp_address=EMAIL, credentials=creds, autodiscover=False,
+                      config=config, access_type=DELEGATE)
 
-# 數值欄位型別（避免 422）
-for num_col in ["bytes", "src_port", "dst_port"]:
-    if num_col in df.columns:
-        df[num_col] = pd.to_numeric(df[num_col], errors="coerce").astype("float64")
+    tz = EWSTimeZone.timezone("Asia/Taipei")
+    cutoff = tz.localize(EWSDateTime.now() - timedelta(days=KEEP_DAYS))
+
+    processed = account.inbox / PROCESSED  # 你的子資料夾
+    qs = processed.all().filter(datetime_received__lt=cutoff)
+    total = qs.count()
+    print(f"[INFO] Deleting {total} old mails in {PROCESSED} before {cutoff} ...")
+
+    for item in qs.iterator(page_size=100):
+        item.delete()  # 若想先丟垃圾桶，用 item.soft_delete()
+    print("[DONE] EWS cleanup finished.")
+
+if __name__ == "__main__":
+    main()
 
 
 
 
-write_api.write(
-    bucket=BUCKET,
-    org=ORG,  # 建議用 orgID
-    record=df,
-    data_frame_measurement_name="arcsight_event",
-    data_frame_tag_columns=tag_cols,        # ← 就是這裡
-    data_frame_timestamp_column="event_ts"
-)
-print(f"[OK] wrote {len(df)} points to {BUCKET}/arcsight_event with tags={tag_cols}")
+
+import os, time
+from pathlib import Path
+
+FOLDER    = r"D:\Joe\Develop\GrafanaInfluxdb\Autoimport\processed"
+KEEP_DAYS = 30
+
+def main():
+    now = time.time()
+    cutoff = now - KEEP_DAYS * 86400
+    p = Path(FOLDER)
+    n = 0
+    for f in p.glob("*"):
+        try:
+            if f.is_file() and f.stat().st_mtime < cutoff:
+                f.unlink()
+                n += 1
+        except Exception as e:
+            print("[WARN]", f, e)
+    print(f"[DONE] Deleted {n} old files (> {KEEP_DAYS}d) in {FOLDER}")
+
+if __name__ == "__main__":
+    main()
+
+
+
+
+

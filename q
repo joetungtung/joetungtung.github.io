@@ -22,3 +22,35 @@ for c in tag_cols:
     df[c] = df[c].astype(str)
 
 print("[DEBUG] tag_cols used:", tag_cols)
+
+
+
+
+
+
+
+
+
+    # 3) 找可用的時間欄位（沿用我上一則訊息的 TIME_CANDIDATES / pick_time_column）
+        time_col = pick_time_column(df)
+        if not time_col:
+            raise ValueError(f"missing time column; tried: {TIME_CANDIDATES}")
+
+        print(f"[DEBUG] using time column: {time_col}")
+        # 4) 解析時間（沿用 parse_time_series）
+        raw_ts = df[time_col].copy()
+
+        df["event_ts"] = parse_time_series(df[time_col])
+        df = df.dropna(subset=["event_ts"])
+        if df.empty:
+            bad = raw_ts.head(3).tolist()  # xs為原始時間欄位
+            raise ValueError(f"all timestamps in '{time_col}' are invalid after parsing")
+
+        # --- 強化自檢開始 ---
+        print("[DEBUG] using time column:", time_col)
+        print("[DEBUG] ts_min =", df["event_ts"].min(), "ts_max =", df["event_ts"].max(), "rows =", len(df))
+
+        preview = 0
+        # 先把數值型欄位統一成 float（避免 422 型別衝突）
+        if "bytes" in df.columns:
+            df["bytes"] = pd.to_numeric(df["bytes"], errors="coerce").astype("float64")

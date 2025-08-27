@@ -1,2 +1,10 @@
-UserWarning: Could not infer format, so each element will be parsed individually, falling back to `dateutil`. To ensure parsing is consistent and as-expected, please specify a format.
-  parsed = pd.to_datetime(s.where(still), errors="coerce", cache=True)
+from(bucket: "SOC")
+  |> range(start: $__timeFrom(), stop: $__timeTo())
+  |> filter(fn: (r) => r._measurement == "arcsight_event")
+  |> keep(columns: ["_time", "attacker_geo_country_name"])
+  |> group(columns: ["attacker_geo_country_name"])
+  |> count()
+  |> rename(columns: {
+      attacker_geo_country_name: "country",
+      _value: "events"
+  })

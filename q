@@ -1,60 +1,28 @@
-from(bucket: "SOC")
-  |> range(start: -12h)
-  |> filter(fn: (r) => r._measurement == "arcsight_event")
-  // 只保留有國家的資料
-  |> filter(fn: (r) => exists r.attacker_geo_country_name and exists r.target_geo_country_name)
-  // 以「來源國、目的國」分組後計數
-  |> group(columns: ["attacker_geo_country_name", "target_geo_country_name"])
-  |> count()
-  // 轉成 Geomap 想要的欄位名
-  |> rename(columns: {
-      attacker_geo_country_name: "src",
-      target_geo_country_name: "dst",
-      _value: "events"
-  })
-  // 清掉空字串或 "nan" 垃圾值（視你的資料而定）
-  |> filter(fn: (r) => r.src != "" and r.dst != "" and r.src != "nan" and r.dst != "nan")
-  // 保留必要欄位、排序、取前 N 名
-  |> keep(columns: ["src","dst","events"])
-  |> sort(columns: ["events"], desc: true)
-  |> limit(n: 50)
+import "influxdata/influxdb/schema"
 
+data =
+  from(bucket: "SOC")
+    |> range(start: -6h)                                   // 時間自行調
+    |> filter(fn: (r) => r._measurement == "arcsight_event")
+    |> schema.fieldsAsCols()                               // 把各 field 攤成同一列
+    |> keep(columns: ["_time","src_lat","src_lon","dst_lat","dst_lon"])
+    // 轉成數值 + 建一個事件計數欄位
+    |> map(fn: (r) => ({
+        r with
+        src_lat: float(v: r.src_lat),
+        src_lon: float(v: r.src_lon),
+        dst_lat: float(v: r.dst_lat),
+        dst_lon: float(v: r.dst_lon),
+        events: 1.0
+    }))
+    // 過濾掉缺值或 0,0 的座標
+    |> filter(fn: (r) =>
+        exists r.src_lat and exists r.src_lon and exists r.dst_lat and exists r.dst_lon and
+        r.src_lat != 0.0 and r.src_lon != 0.0 and r.dst_lat != 0.0 and r.dst_lon != 0.0
+    )
+    // 降取樣，避免點數過多（可依需要調整 every）
+    |> aggregateWindow(every: 1m, fn: sum, createEmpty: false)
+    |> keep(columns: ["_time","src_lat","src_lon","dst_lat","dst_lon","events"])
+    |> limit(n: 5000)
 
-
-
-
-from(bucket:"SOC")
-  |> range(start: -12h)
-  |> filter(fn:(r)=> r._measurement=="arcsight_event")
-  |> filter(fn:(r)=> exists r.attacker_geo_country_name and exists r.target_geo_country_name)
-  |> group(columns:["attacker_geo_country_name","target_geo_country_name"])
-  |> count()
-  |> rename(columns:{attacker_geo_country_name:"src", target_geo_country_name:"dst", _value:"events"})
-  |> group(columns:["src"])
-  |> sum(column:"events")
-  |> keep(columns:["src","events"])
-  |> sort(columns:["events"], desc:true)
-  |> limit(n:10)
-
-
-
-
-from(bucket: "SOC")
-  |> range(start: -12h)
-  |> filter(fn: (r) => r._measurement == "arcsight_event")
-  |> filter(fn: (r) => exists r.attacker_geo_country_name and exists r.target_geo_country_name)
-  |> group(columns: ["attacker_geo_country_name", "target_geo_country_name"])
-  |> count()
-  |> rename(columns: {
-      attacker_geo_country_name: "src",
-      target_geo_country_name: "dst",
-      _value: "events"
-  })
-  // 這一步把 group key 拆掉，讓 src/dst 變成一般欄位（很關鍵）
-  |> group()
-  // 只留地圖需要的三欄
-  |> keep(columns: ["src","dst","events"])
-  // 保證是字串欄位
-  |> map(fn: (r) => ({ r with src: string(v: r.src), dst: string(v: r.dst) }))
-  |> sort(columns: ["events"], desc: true)
-  |> limit(n: 50)
+data

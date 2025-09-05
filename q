@@ -1,44 +1,39 @@
 import "influxdata/influxdb/schema"
 
+// 1) 取出你要的四個座標欄位，轉成數值並過濾 0/缺值
 base =
-from(bucket: "SOC")
-  |> range(start: -48h)                                    // 不要用 start: 0，先限制時間避免超重
-  |> filter(fn: (r) =>
-      r._measurement == "arcsight_event" and
-      (r._field == "src_lat" or r._field == "src_lon" or
-       r._field == "dst_lat" or r._field == "dst_lon"))
-  |> pivot(rowKey: ["_time"], columnKey: ["_field"], valueColumn: "_value")
-  |> keep(columns: ["_time","src_lat","src_lon","dst_lat","dst_lon"])
-  // 強制轉成數值，並過濾掉 0 / 空值 / 超出地理範圍的雜訊
-  |> map(fn: (r) => ({
+  from(bucket: "SOC")
+    |> range(start: -12h)                      // 視需求調整時間窗
+    |> filter(fn: (r) => r._measurement == "arcsight_event")
+    |> schema.fieldsAsCols()
+    |> keep(columns: ["_time","src_lat","src_lon","dst_lat","dst_lon"])
+    |> map(fn: (r) => ({
       r with
-      src_lat: float(v: r.src_lat),  src_lon: float(v: r.src_lon),
-      dst_lat: float(v: r.dst_lat),  dst_lon: float(v: r.dst_lon),
-  }))
-  |> filter(fn: (r) =>
-      exists r.src_lat and exists r.src_lon and
-      exists r.dst_lat and exists r.dst_lon and
-      r.src_lat != 0.0 and r.src_lon != 0.0 and
-      r.dst_lat != 0.0 and r.dst_lon != 0.0 and
-      r.src_lat >= -90.0 and r.src_lat <= 90.0 and
-      r.dst_lat >= -90.0 and r.dst_lat <= 90.0 and
-      r.src_lon >= -180.0 and r.src_lon <= 180.0 and
-      r.dst_lon >= -180.0 and r.dst_lon <= 180.0
-  )
+      src_lat: float(v: r.src_lat),
+      src_lon: float(v: r.src_lon),
+      dst_lat: float(v: r.dst_lat),
+      dst_lon: float(v: r.dst_lon),
+    }))
+    |> filter(fn: (r) =>
+      exists r.src_lat and exists r.src_lon and exists r.dst_lat and exists r.dst_lon and
+      r.src_lat != 0.0 and r.src_lon != 0.0 and r.dst_lat != 0.0 and r.dst_lon != 0.0
+    )
 
-routes =
-base
-  // 不要對 _time 做 count（會出 “unsupported aggregate column type time”）
-  // 用一個常數欄位來計數，再做 sum
-  |> map(fn: (r) => ({ r with events: 1.0 }))
-  |> group(columns: ["src_lat","src_lon","dst_lat","dst_lon"])
-  |> sum(column: "events")
-  |> sort(columns: ["events"], desc: true)
-  |> limit(n: 200)                                         // 先限量，畫線會順很多
-  // 某些 Grafana 版本會自動識別下列欄名，順手改成它愛的名字
-  |> rename(columns: {
-      src_lat: "sourceLatitude",  src_lon: "sourceLongitude",
-      dst_lat: "destinationLatitude", dst_lon: "destinationLongitude"
-  })
+// 2) 把一筆事件拆成兩個點，並用相同的 route_id 串起來
+srcPts =
+  base
+    |> keep(columns: ["_time","src_lat","src_lon"])
+    |> rename(columns: {src_lat: "latitude", src_lon: "longitude"})
+    |> map(fn: (r) => ({ r with route_id: string(v: r._time) }))
 
-routes
+dstPts =
+  base
+    |> keep(columns: ["_time","dst_lat","dst_lon"])
+    |> rename(columns: {dst_lat: "latitude", dst_lon: "longitude"})
+    |> map(fn: (r) => ({ r with route_id: string(v: r._time) }))
+
+// 3) 合併，依 route_id 分組並按時間排序（每條線 = 一個事件）
+union(tables: [srcPts, dstPts])
+  |> group(columns: ["route_id"])
+  |> sort(columns: ["_time"], desc: false)
+  |> limit(n: 2000)  // 太多就提高時間窗或加 limit，避免點數爆表

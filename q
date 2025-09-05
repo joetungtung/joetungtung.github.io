@@ -1,37 +1,52 @@
 import "influxdata/influxdb/schema"
 
+// 1) 先把原始事件縮成「唯一路徑」+ 計數
 base =
   from(bucket: "SOC")
-    |> range(start: -12h)                                // 時間窗自己調
+    |> range(start: -12h)                                   // 時間自行調
     |> filter(fn: (r) => r._measurement == "arcsight_event")
     |> schema.fieldsAsCols()
     |> keep(columns: ["_time","src_lat","src_lon","dst_lat","dst_lon"])
-    |> map(fn: (r) => ({
+    |> map(fn: (r) => ({                                   // 確保是數值
         r with
         src_lat: float(v: r.src_lat),
         src_lon: float(v: r.src_lon),
         dst_lat: float(v: r.dst_lat),
         dst_lon: float(v: r.dst_lon),
     }))
-    |> filter(fn: (r) =>
+    |> filter(fn: (r) =>                                    // 濾掉 0 或空
         exists r.src_lat and exists r.src_lon and exists r.dst_lat and exists r.dst_lon and
         r.src_lat != 0.0 and r.src_lon != 0.0 and r.dst_lat != 0.0 and r.dst_lon != 0.0
     )
-    |> duplicate(column: "_time", as: "route_id")        // ① 先複製出一欄
-    |> map(fn: (r) => ({ r with route_id: string(v: r.route_id) }))   // ② 轉成字串，便於分組
+    |> group(columns: ["src_lat","src_lon","dst_lat","dst_lon"])
+    |> count(column: "_time")                                // 對每條路徑計數
+    |> rename(columns: {_value: "events"})                   // 計數欄改名
+    |> group()                                               // 還原為單一表（便於後續 union）
 
+// 2) 為 Route layer 準備兩筆（src / dst），欄名統一成 latitude / longitude
 src =
   base
-    |> keep(columns: ["_time","route_id","src_lat","src_lon"])
-    |> rename(columns: {src_lat: "latitude", src_lon: "longitude"})
+    |> map(fn: (r) => ({
+        latitude:  r.src_lat,
+        longitude: r.src_lon,
+        events:    r.events,
+        gid:       string(v: r.src_lat) + "," + string(v: r.src_lon) + "→" + string(v: r.dst_lat) + "," + string(v: r.dst_lon),
+        hop:       0.0
+    }))
 
 dst =
   base
-    |> keep(columns: ["_time","route_id","dst_lat","dst_lon"])
-    |> rename(columns: {dst_lat: "latitude", dst_lon: "longitude"})
+    |> map(fn: (r) => ({
+        latitude:  r.dst_lat,
+        longitude: r.dst_lon,
+        events:    r.events,
+        gid:       string(v: r.src_lat) + "," + string(v: r.src_lon) + "→" + string(v: r.dst_lat) + "," + string(v: r.dst_lon),
+        hop:       1.0
+    }))
 
+// 3) 合併為「兩筆一組」並按 hop 排序，Route 會把同組兩點連線
 union(tables: [src, dst])
-  |> group(columns: ["route_id"])                        // 每個 route_id = 一條線
-  |> sort(columns: ["_time"], desc: false)
-  |> keep(columns: ["_time","route_id","latitude","longitude"])       // 明確保留
-  |> limit(n: 2000)                                      // 太多就縮短時間窗或調小 n
+  |> group(columns: ["gid"])                                  // 每組 = 一條線
+  |> sort(columns: ["hop"], desc: false)
+  |> keep(columns: ["latitude","longitude","events","gid"])   // 給地圖用
+  |> limit(n: 5000)

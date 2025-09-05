@@ -35,3 +35,26 @@ from(bucket:"SOC")
   |> keep(columns:["src","events"])
   |> sort(columns:["events"], desc:true)
   |> limit(n:10)
+
+
+
+
+from(bucket: "SOC")
+  |> range(start: -12h)
+  |> filter(fn: (r) => r._measurement == "arcsight_event")
+  |> filter(fn: (r) => exists r.attacker_geo_country_name and exists r.target_geo_country_name)
+  |> group(columns: ["attacker_geo_country_name", "target_geo_country_name"])
+  |> count()
+  |> rename(columns: {
+      attacker_geo_country_name: "src",
+      target_geo_country_name: "dst",
+      _value: "events"
+  })
+  // 這一步把 group key 拆掉，讓 src/dst 變成一般欄位（很關鍵）
+  |> group()
+  // 只留地圖需要的三欄
+  |> keep(columns: ["src","dst","events"])
+  // 保證是字串欄位
+  |> map(fn: (r) => ({ r with src: string(v: r.src), dst: string(v: r.dst) }))
+  |> sort(columns: ["events"], desc: true)
+  |> limit(n: 50)

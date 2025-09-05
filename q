@@ -1,28 +1,42 @@
-// 取最近 24h，可自行改成 $__timeFrom()/To()
-from(bucket: "SOC")
-  |> range(start: -24h)
-  |> filter(fn: (r) => r._measurement == "arcsight_event")
-  // 確保兩端國名與座標都存在
-  |> filter(fn: (r) =>
-      exists r.src and r.src != "" and
-      exists r.dst and r.dst != "" and
+// ① 先把要用的 fields 收齊並 pivot 成欄位
+base =
+  from(bucket: "SOC")
+    |> range(start: $__timeFrom(), stop: $__timeTo())
+    |> filter(fn: (r) => r._measurement == "arcsight_event")
+    // 只取路徑需要的六個欄位
+    |> filter(fn: (r) =>
+      r._field == "src" or r._field == "dst" or
+      r._field == "src_lat" or r._field == "src_lon" or
+      r._field == "dst_lat" or r._field == "dst_lon"
+    )
+    |> pivot(rowKey: ["_time"], columnKey: ["_field"], valueColumn: "_value")
+    // 確保六個欄位都存在（避免 NaN 造成地圖報黃驚嘆號）
+    |> filter(fn: (r) =>
+      exists r.src and exists r.dst and
       exists r.src_lat and exists r.src_lon and
       exists r.dst_lat and exists r.dst_lon
-  )
-  // 以 (src, dst) 成對彙總事件數
-  |> group(columns: ["src","dst"])
-  |> count()
-  // 把對應的座標帶下來（在每個 group 拿第一筆即可）
-  |> first(column: "src_lat")
-  |> first(column: "src_lon")
-  |> first(column: "dst_lat")
-  |> first(column: "dst_lon")
-  // 清理欄位名稱（把 _value 改名成 events）
-  |> rename(columns: {_value: "events"})
-  // 解除 group key 讓欄位變成真正欄位
-  |> group(columns: [])
-  // 僅保留地圖需要的欄位
+    )
+
+// ② 計算每個 src→dst 的事件數
+counts =
+  base
+    |> group(columns: ["src","dst"])
+    |> count()
+    |> rename(columns: {_value: "events"})
+    |> keep(columns: ["src","dst","events"])
+
+// ③ 取每組 src→dst 的代表座標（拿第一筆即可）
+coords =
+  base
+    |> group(columns: ["src","dst"])
+    |> first(column: "src_lat")
+    |> first(column: "src_lon")
+    |> first(column: "dst_lat")
+    |> first(column: "dst_lon")
+    |> keep(columns: ["src","dst","src_lat","src_lon","dst_lat","dst_lon"])
+
+// ④ 合併「事件數」與「座標」
+join(tables: {a: counts, b: coords}, on: ["src","dst"])
   |> keep(columns: ["src","dst","events","src_lat","src_lon","dst_lat","dst_lon"])
-  // 排序 + 取 Top N，避免太多線
   |> sort(columns: ["events"], desc: true)
-  |> limit(n: 200)
+  |> limit(n: 200)   // 避免線太多造成面板卡頓

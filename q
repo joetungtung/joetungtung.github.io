@@ -49,3 +49,8 @@ from(bucket:"SOC")
   src_lat: if r.src_lat == 0.0 then 25.04 else r.src_lat,
   src_lon: if r.src_lon == 0.0 then 121.53 else r.src_lon
 }))
+
+
+
+invalid: compilation failed: error @10:61-10:62: invalid expression: invalid token for primary expression: GT error @11:61-11:62: invalid expression: invalid token for primary expression: GT error @12:61-12:62: invalid expression: invalid token for primary expression: GT error @13:61-13:62: invalid expression: invalid token for primary expression: GT
+

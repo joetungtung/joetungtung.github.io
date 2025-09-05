@@ -1,67 +1,42 @@
 import "influxdata/influxdb/schema"
 
-// A) 取四個座標欄，轉 float，濾掉缺值與非法值
+// 1) 先把原始資料變成欄位表格（含經緯度），在時間範圍內
 base =
   from(bucket: "SOC")
-    |> range(start: -12h)                                   // 視需要調整
+    |> range(start: v.timeRangeStart, stop: v.timeRangeStop)
     |> filter(fn: (r) => r._measurement == "arcsight_event")
-    |> schema.fieldsAsCols()
+    |> schema.fieldsAsCols()                                  // 轉成寬表，拿得到 dst_lat 等欄位
     |> keep(columns: ["_time","src_lat","src_lon","dst_lat","dst_lon"])
+    // 轉成浮點、同時保留 _time 以便當作配對用的 gid
     |> map(fn: (r) => ({
-        r with
+        _time: r._time,
         src_lat: float(v: r.src_lat),
         src_lon: float(v: r.src_lon),
         dst_lat: float(v: r.dst_lat),
         dst_lon: float(v: r.dst_lon),
     }))
+    // 基本清洗：排除 0 或 NaN
     |> filter(fn: (r) =>
         exists r.src_lat and exists r.src_lon and
         exists r.dst_lat and exists r.dst_lon and
         r.src_lat != 0.0 and r.src_lon != 0.0 and
-        r.dst_lat != 0.0 and r.dst_lon != 0.0 and
-        r.src_lat >= -90.0 and r.src_lat <= 90.0 and
-        r.dst_lat >= -90.0 and r.dst_lat <= 90.0 and
-        r.src_lon >= -180.0 and r.src_lon <= 180.0 and
-        r.dst_lon >= -180.0 and r.dst_lon <= 180.0
+        r.dst_lat != 0.0 and r.dst_lon != 0.0
     )
 
-// B) 以同一路徑（四座標組）做計數聚合
-routesAgg =
-  base
-    |> map(fn: (r) => ({ r with events: 1.0 }))             // 先做常數欄
-    |> group(columns: ["src_lat","src_lon","dst_lat","dst_lon"])
-    |> map(fn: (r) => ({ r with _value: r.events }))        // **關鍵**：把 events 複製到 _value
-    |> sum()                                                // 對 _value 做加總
-    |> rename(columns: {_value: "events"})                  // 把結果改名回 events
-    |> group()
-    |> keep(columns: ["src_lat","src_lon","dst_lat","dst_lon","events"])
-    |> limit(n: 1000)
-
-// C) 展成兩筆（src/dst），用 gid 把兩點連成一條線
+// 2) 拆成起點與終點兩份表，並加上 hop / gid
 src =
-  routesAgg
-    |> map(fn: (r) => ({
-        latitude:  r.src_lat,
-        longitude: r.src_lon,
-        events:    r.events,
-        gid:       string(v: r.src_lat) + "," + string(v: r.src_lon) + "→" +
-                   string(v: r.dst_lat) + "," + string(v: r.dst_lon),
-        hop:       0.0
-    }))
+  base
+    |> keep(columns: ["_time","src_lat","src_lon"])
+    |> rename(columns: {src_lat: "latitude", src_lon: "longitude"})
+    |> map(fn: (r) => ({ r with hop: 0, gid: string(v: r._time) }))
+    |> keep(columns: ["latitude","longitude","hop","gid"])
 
 dst =
-  routesAgg
-    |> map(fn: (r) => ({
-        latitude:  r.dst_lat,
-        longitude: r.dst_lon,
-        events:    r.events,
-        gid:       string(v: r.src_lat) + "," + string(v: r.src_lon) + "→" +
-                   string(v: r.dst_lat) + "," + string(v: r.dst_lon),
-        hop:       1.0
-    }))
+  base
+    |> keep(columns: ["_time","dst_lat","dst_lon"])
+    |> rename(columns: {dst_lat: "latitude", dst_lon: "longitude"})
+    |> map(fn: (r) => ({ r with hop: 1, gid: string(v: r._time) }))
+    |> keep(columns: ["latitude","longitude","hop","gid"])
 
+// 3) 合併成 Route layer 可用格式（同一 gid 會有兩列：hop=0 與 hop=1）
 union(tables: [src, dst])
-  |> group(columns: ["gid"])
-  |> sort(columns: ["hop"], desc: false)
-  |> keep(columns: ["latitude","longitude","events","gid"])
-  |> limit(n: 5000)

@@ -1,108 +1,19 @@
-# --- Country → (lat, lon) ---------------
-# 先嘗試載入同目錄的 country_centroids.csv（可自備、易擴充）
-# 檔案格式：country,lat,lon   例如：Taiwan,23.6978,120.9605
-_COUNTRY_MAP = {}
+(venv) D:\Joe\Develop\GrafanaInfluxdb\Autoimport>Offical_Arcsight_Ingest.py
+[WATCHING] D:\Joe\Develop\GrafanaInfluxdb\Autoimport\incoming
+[TARGET] InfluxDB: http://127.0.0.1:8086, org=LINE BANK SOC, bucket=SOC, measurement=arcsight_event
+[INGEST] D:\Joe\Develop\GrafanaInfluxdb\Autoimport\incoming\DDoS_5min_8-26-25 11-31-27 AM.csv
+[DEBUG] columns(normalized): ['end_time', 'start_time', 'name', 'device_vendor', 'attacker_address', 'attacker_port', 'agent_type', 'transport_protocol', 'agent_severity', 'device_action', 'attacker_geo_location_info', 'attacker_geo_country_name', 'target_address', 'target_port', 'target_geo_location_info', 'target_geo_country_name', 'manager_receipt_time', 'agent_id', 'agent_name']
+[DEBUG] using time column: manager_receipt_time
+[DEBUG] ts_min = 2025-08-26 03:26:38+00:00 ts_max = 2025-08-26 03:31:28+00:00 rows = 350
+[DEBUG] tag_cols used: ['device_vendor', 'agent_name', 'agent_type', 'agent_id', 'transport_protocol', 'device_action', 'attacker_geo_country_name', 'target_geo_country_name', 'attacker_address', 'attacker_port', 'target_address', 'target_port']
+[ERROR] ingest failed: (422)
+Reason: Unprocessable Entity
+HTTP response headers: HTTPHeaderDict({'Content-Type': 'application/json; charset=utf-8', 'X-Influxdb-Build': 'OSS', 'X-Influxdb-Version': 'v2.7.12', 'X-Platform-Error-Code': 'unprocessable entity', 'Date': 'Fri, 05 Sep 2025 09:04:10 GMT', 'Content-Length': '1140'})
+HTTP response body: {"code":"unprocessable entity","message":"failure writing points to database: partial write: dropped 350 points outside retention policy of duration 72h0m0s - oldest point arcsight_event,agent_id=3rLPKhHABABC+0glav-tIYQ\\=\\=,agent_name=Radware_UDP515,agent_type=syslog,attacker_address=64.59.150.138,attacker_geo_country_name=Canada,attacker_port=40787.0,device_action=forward,device_vendor=Radware,target_address=122.147.229.201,target_geo_country_name=Taiwan,target_port=53.0,transport_protocol=UDP at 2025-08-26T03:26:38Z dropped because it violates a Retention Policy Lower Bound at 2025-09-02T09:04:10.7684903Z, newest point arcsight_event,agent_id=3rLPKhHABABC+0glav-tIYQ\\=\\=,agent_name=Radware_UDP515,agent_type=syslog,attacker_address=178.32.193.255,attacker_geo_country_name=France,attacker_port=0.0,device_action=drop,device_vendor=Radware,target_address=218.210.53.3,target_geo_country_name=Taiwan,target_port=0.0,transport_protocol=TCP at 2025-08-26T03:31:28Z dropped because it violates a Retention Policy Lower Bound at 2025-09-02T09:04:10.7684903Z dropped=350 for database: 610c26001281c704 for retention policy: autogen"}
 
-def _load_country_csv():
-    import csv, os
-    path = os.path.join(os.path.dirname(__file__), "country_centroids.csv")
-    if os.path.exists(path):
-        with open(path, "r", encoding="utf-8-sig", newline="") as f:
-            for row in csv.DictReader(f):
-                k = str(row["country"]).strip().lower()
-                try:
-                    _COUNTRY_MAP[k] = (float(row["lat"]), float(row["lon"]))
-                except Exception:
-                    pass
-
-# 內建一份常見國家座標（不夠可以用 CSV 覆蓋/擴充）
-_BUILTIN_COUNTRIES = {
-    "taiwan": (23.6978, 120.9605),
-    "japan": (36.2048, 138.2529),
-    "united states": (37.0902, -95.7129),
-    "united kingdom": (55.3781, -3.4360),
-    "germany": (51.1657, 10.4515),
-    "canada": (56.1304, -106.3468),
-    "china": (35.8617, 104.1954),
-    "south korea": (35.9078, 127.7669),
-    "russia": (61.5240, 105.3188),
-    "france": (46.2276, 2.2137),
-    "india": (20.5937, 78.9629),
-    "australia": (-25.2744, 133.7751),
-    "poland": (51.9194, 19.1451),
-    "afghanistan": (33.9391, 67.7100),
-}
-
-# 常見別名（大小寫、縮寫統一）
-_ALIASES = {
-    "us": "united states",
-    "usa": "united states",
-    "u.s.": "united states",
-    "uk": "united kingdom",
-    "great britain": "united kingdom",
-    "south korea": "south korea",
-    "korea, republic of": "south korea",
-    "russian federation": "russia",
-    "u.a.e.": "united arab emirates",
-}
-
-def _norm_country(name: str) -> str:
-    if name is None:
-        return ""
-    s = str(name).strip().lower()
-    if not s:
-        return s
-    s = _ALIASES.get(s, s)
-    return s
-
-def country_to_coords(name: str):
-    """
-    回傳 (lat, lon)。找不到回傳 (nan, nan)。
-    CSV > 內建表 > 失敗→NaN
-    """
-    import numpy as np
-    k = _norm_country(name)
-    if not _COUNTRY_MAP:
-        # 第一次呼叫時嘗試載入 CSV
-        _load_country_csv()
-    if k in _COUNTRY_MAP:
-        return _COUNTRY_MAP[k]
-    if k in _BUILTIN_COUNTRIES:
-        return _BUILTIN_COUNTRIES[k]
-    return (np.nan, np.nan)
-
-
-
-
-
-# --- 產生 src/dst 國名（供 Route 與統計使用） ---
-# 你的 CSV 欄位（已經標準化成底線小寫），請依實際名稱對應：
-SRC_COUNTRY_COL = "attacker_geo_country_name"
-DST_COUNTRY_COL = "target_geo_country_name"
-
-# 若不存在就補空字串，避免後續 map 爆掉
-for col in [SRC_COUNTRY_COL, DST_COUNTRY_COL]:
-    if col not in df.columns:
-        df[col] = ""
-
-# 另外保留簡短欄位名（在 Query 比較好打）
-df["src"] = df[SRC_COUNTRY_COL].astype(str)
-df["dst"] = df[DST_COUNTRY_COL].astype(str)
-
-# --- 轉換成座標欄位（給 Geomap Route: Coords 用） ---
-def _col_to_coords(series):
-    # series → 兩個 list：lat_list, lon_list
-    lats, lons = [], []
-    for v in series.astype(str).fillna(""):
-        lat, lon = country_to_coords(v)
-        lats.append(lat)
-        lons.append(lon)
-    return lats, lons
-
-src_lats, src_lons = _col_to_coords(df["src"])
-dst_lats, dst_lons = _col_to_coords(df["dst"])
-
-df["src_lat"] = pd.to_numeric(src_lats, errors="coerce").astype("float64")
-df["src_lon"] = pd.to_numeric(src_lons, errors="coerce").astype("float64")
-df["dst_lat"] = pd.to_numeric(dst_lats, errors="coerce").astype("float64")
-df["dst_lon"] = pd.to_numeric(dst_lons, errors="coerce").astype("float64")
+[MOVE] D:\Joe\Develop\GrafanaInfluxdb\Autoimport\incoming\DDoS_5min_8-26-25 11-31-27 AM.csv -> D:\Joe\Develop\GrafanaInfluxdb\Autoimport\failed\DDoS_5min_8-26-25 11-31-27 AM.csv
+[INGEST] D:\Joe\Develop\GrafanaInfluxdb\Autoimport\incoming\DDoS_5min_8-26-25 11-11-27 AM.csv
+[DEBUG] columns(normalized): ['end_time', 'start_time', 'name', 'device_vendor', 'attacker_address', 'attacker_port', 'agent_type', 'transport_protocol', 'agent_severity', 'device_action', 'attacker_geo_location_info', 'attacker_geo_country_name', 'target_address', 'target_port', 'target_geo_location_info', 'target_geo_country_name', 'manager_receipt_time', 'agent_id', 'agent_name']
+[DEBUG] using time column: manager_receipt_time
+[DEBUG] ts_min = 2025-08-26 03:06:48+00:00 ts_max = 2025-08-26 03:11:28+00:00 rows = 305
+[DEBUG] tag_cols used: ['device_vendor', 'agent_name', 'agent_type', 'agent_id', 'transport_protocol', 'device_action', 'attacker_geo_country_name', 'target_geo_country_name', 'attacker_address', 'attacker_port', 'target_address', 'target_port']

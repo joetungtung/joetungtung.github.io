@@ -55,22 +55,22 @@ union(tables: [src, dst])
 
 
 
-
 import "influxdata/influxdb/schema"
 
+// 先把資料整成想要的欄位、型別
 base =
   from(bucket: "SOC")
-    |> range(start: -6h)                                    // 取最近6小時，可自行調整
+    |> range(start: -6h)                                   // 需要就改時間窗
     |> filter(fn: (r) => r._measurement == "arcsight_event")
-    |> filter(fn: (r) => r.target_geo_country_name == "Taiwan")  // ★ 限定目的地是台灣
+    |> filter(fn: (r) => r.target_geo_country_name == "Taiwan")   // 只保留「目的地＝台灣」
     |> schema.fieldsAsCols()
-    |> keep(columns: ["_time","attacker_address","src_lat","src_lon","dst_lat","dst_lon"])
+    |> keep(columns: ["_time","src_lat","src_lon","dst_lat","dst_lon"])
     |> map(fn: (r) => ({
         r with
         src_lat: float(v: r.src_lat),
         src_lon: float(v: r.src_lon),
         dst_lat: float(v: r.dst_lat),
-        dst_lon: float(v: r.dst_lon)
+        dst_lon: float(v: r.dst_lon),
     }))
     |> filter(fn: (r) =>
         exists r.src_lat and exists r.src_lon and
@@ -79,31 +79,37 @@ base =
         r.dst_lat != 0.0 and r.dst_lon != 0.0
     )
 
-// === 加上 hop 與 route_id ===
-routes =
+// 拆成來源點與目的點兩條 stream
+src =
   base
     |> map(fn: (r) => ({
         r with
-        // hop = 0 → 表示來源； hop = 1 → 表示目的地
         hop: 0,
-        latitude: r.src_lat,
+        latitude:  r.src_lat,
         longitude: r.src_lon,
-        route_id: string(v: r.src_lat) + "," + string(v: r.src_lon) + "=>" + string(v: r.dst_lat) + "," + string(v: r.dst_lon)
+        route_id:  string(v: r.src_lat) + "," + string(v: r.src_lon) + "=>" +
+                   string(v: r.dst_lat) + "," + string(v: r.dst_lon)
     }))
-    |> union(
-      tables: base
-        |> map(fn: (r) => ({
-            r with
-            hop: 1,
-            latitude: r.dst_lat,
-            longitude: r.dst_lon,
-            route_id: string(v: r.src_lat) + "," + string(v: r.src_lon) + "=>" + string(v: r.dst_lat) + "," + string(v: r.dst_lon)
-        }))
-    )
+
+dst =
+  base
+    |> map(fn: (r) => ({
+        r with
+        hop: 1,
+        latitude:  r.dst_lat,
+        longitude: r.dst_lon,
+        route_id:  string(v: r.src_lat) + "," + string(v: r.src_lon) + "=>" +
+                   string(v: r.dst_lat) + "," + string(v: r.dst_lon)
+    }))
+
+// 合併、依 route 分組，並確保「來源在前、目的在後」
+routes =
+  union(tables: [src, dst])
     |> group(columns: ["route_id"])
-    |> sort(columns: ["hop"], desc: false)   // 確保來源在前，目的地在後
+    |> sort(columns: ["hop"], desc: false)
     |> keep(columns: ["_time","latitude","longitude","hop","route_id"])
 
+// 最終輸出
 routes
 
 

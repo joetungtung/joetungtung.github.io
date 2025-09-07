@@ -8,3 +8,22 @@ from(bucket: "SOC")
   |> keep(columns: ["attacker_geo_country_name", "events"])
   |> sort(columns: ["events"], desc: true)
   |> limit(n: 50)
+
+
+
+
+
+
+import "influxdata/influxdb/schema"
+
+from(bucket: "SOC")
+  |> range(start: -12h)
+  |> filter(fn: (r) => r._measurement == "arcsight_event")
+  |> filter(fn: (r) => r.target_geo_country_name == "Taiwan")   // 保留「目標=台灣」
+  |> schema.fieldsAsCols()
+  |> filter(fn: (r) =>
+      exists r.src_lat and exists r.src_lon and exists r.dst_lat and exists r.dst_lon and
+      r.src_lat != 0.0 and r.src_lon != 0.0 and r.dst_lat != 0.0 and r.dst_lon != 0.0
+    )
+  |> keep(columns: ["_time","attacker_geo_country_name","src_lat","src_lon","dst_lat","dst_lon"])
+  |> limit(n: 100)

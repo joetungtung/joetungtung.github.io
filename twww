@@ -1,5 +1,1 @@
-A query returned too many datapoints and the results have been truncated at 13401 points to prevent memory issues. At the current graph size, Grafana can only draw 1340. Try using the aggregateWindow() function in your query to reduce the number of points returned.
-
-Add query
-
-Expression
+invalid: error in query specification while starting program: this Flux script returns no streaming data. Consider adding a "yield" or invoking streaming functions directly, without performing an assignment

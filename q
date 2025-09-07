@@ -55,3 +55,111 @@ routes =
 
 // 4) 輸出
 routes
+
+
+
+
+
+
+
+
+
+import "influxdata/influxdb/schema"
+
+base =
+from(bucket: "SOC")
+  |> range(start: -12h)
+  |> filter(fn: (r) => r._measurement == "arcsight_event")
+  |> schema.fieldsAsCols()
+  |> filter(fn: (r) => r.target_geo_country_name == "Taiwan")
+  |> filter(fn: (r) =>
+      exists r.src_lat and exists r.src_lon and
+      exists r.dst_lat and exists r.dst_lon
+  )
+  |> map(fn: (r) => ({
+      r with
+      src_lat: float(v: r.src_lat),
+      src_lon: float(v: r.src_lon),
+      dst_lat: float(v: r.dst_lat),
+      dst_lon: float(v: r.dst_lon),
+  }))
+  |> filter(fn: (r) =>
+      r.src_lat != 0.0 and r.src_lon != 0.0 and
+      r.dst_lat != 0.0 and r.dst_lon != 0.0
+  )
+  |> limit(n: 2000)
+
+src =
+  base
+    |> keep(columns: ["_time","src_lat","src_lon"])
+    |> rename(columns: {src_lat: "latitude", src_lon: "longitude"})
+    |> map(fn: (r) => ({ gid: string(v: r._time), hop: 0, latitude: r.latitude, longitude: r.longitude }))
+
+dst =
+  base
+    |> keep(columns: ["_time","dst_lat","dst_lon"])
+    |> rename(columns: {dst_lat: "latitude", dst_lon: "longitude"})
+    |> map(fn: (r) => ({ gid: string(v: r._time), hop: 1, latitude: r.latitude, longitude: r.longitude }))
+
+union(tables: [src, dst])
+  |> group(columns: ["gid"])
+  |> sort(columns: ["hop"], desc: false)
+  |> keep(columns: ["gid","hop","latitude","longitude"])
+  |> limit(n: 100)
+
+
+
+
+
+
+
+
+
+
+import "influxdata/influxdb/schema"
+
+base =
+from(bucket: "SOC")
+  |> range(start: -12h)
+  |> filter(fn: (r) => r._measurement == "arcsight_event")
+  |> schema.fieldsAsCols()
+  |> filter(fn: (r) => r.target_geo_country_name == "Taiwan")
+  |> filter(fn: (r) =>
+      exists r.src_lat and exists r.src_lon and
+      exists r.dst_lat and exists r.dst_lon
+  )
+  |> map(fn: (r) => ({
+      r with
+      src_lat: float(v: r.src_lat),
+      src_lon: float(v: r.src_lon),
+      dst_lat: float(v: r.dst_lat),
+      dst_lon: float(v: r.dst_lon),
+  }))
+  |> filter(fn: (r) =>
+      r.src_lat != 0.0 and r.src_lon != 0.0 and
+      r.dst_lat != 0.0 and r.dst_lon != 0.0
+  )
+  |> limit(n: 2000)
+
+src =
+  base
+    |> keep(columns: ["_time","src_lat","src_lon"])
+    |> rename(columns: {src_lat: "latitude", src_lon: "longitude"})
+    |> map(fn: (r) => ({ gid: string(v: r._time), hop: 0, latitude: r.latitude, longitude: r.longitude }))
+
+dst =
+  base
+    |> keep(columns: ["_time","dst_lat","dst_lon"])
+    |> rename(columns: {dst_lat: "latitude", dst_lon: "longitude"})
+    |> map(fn: (r) => ({ gid: string(v: r._time), hop: 1, latitude: r.latitude, longitude: r.longitude }))
+
+routes =
+  union(tables: [src, dst])
+    |> group(columns: ["gid"])
+    |> sort(columns: ["hop"], desc: false)
+    |> rename(columns: {gid: "route_id"})
+    |> keep(columns: ["route_id","hop","latitude","longitude"])
+    |> limit(n: 4000)
+
+routes
+

@@ -1,1 +1,2 @@
-invalid: unsupported aggregate column type time
+invalid: runtime error @33:8-33:84: rename: rename error: column "_value" doesn't exist
+

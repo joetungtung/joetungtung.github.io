@@ -1,33 +1,89 @@
 import "influxdata/influxdb/schema"
 
+from(bucket: "SOC")
+  |> range(start: -12h)                          // 時窗你可改
+  |> filter(fn: (r) => r._measurement == "arcsight_event")
+  |> schema.fieldsAsCols()
+  |> keep(columns: [
+    "_time",
+    "attacker_geo_country_name",
+    "target_geo_country_name",
+    "src_lat","src_lon","dst_lat","dst_lon"
+  ])
+  // 先把可能是字串/空值的經緯度轉成數字，沒有就設 0
+  |> map(fn: (r) => ({
+        r with
+        src_lat_f: if exists r.src_lat then float(v: r.src_lat) else 0.0,
+        src_lon_f: if exists r.src_lon then float(v: r.src_lon) else 0.0,
+        dst_lat_f: if exists r.dst_lat then float(v: r.dst_lat) else 0.0,
+        dst_lon_f: if exists r.dst_lon then float(v: r.dst_lon) else 0.0
+  }))
+  // 打標示：來源/目的的座標是否齊全
+  |> map(fn: (r) => ({
+        r with
+        src_ok: (r.src_lat_f != 0.0 and r.src_lon_f != 0.0),
+        dst_ok: (r.dst_lat_f != 0.0 and r.dst_lon_f != 0.0)
+  }))
+  // 只看「有缺」的
+  |> filter(fn: (r) => r.src_ok == false or r.dst_ok == false)
+  |> keep(columns: [
+    "_time",
+    "attacker_geo_country_name","target_geo_country_name",
+    "src_lat_f","src_lon_f","dst_lat_f","dst_lon_f",
+    "src_ok","dst_ok"
+  ])
+  |> sort(columns: ["_time"], desc: true)
+  |> limit(n: 200)
+
+
+
+
+
+
+
+import "influxdata/influxdb/schema"
+
 base =
   from(bucket: "SOC")
     |> range(start: -12h)
     |> filter(fn: (r) => r._measurement == "arcsight_event")
     |> schema.fieldsAsCols()
-    |> keep(columns: ["_time","attacker_geo_country_name","target_geo_country_name","src_lat","src_lon","dst_lat","dst_lon"])
-    // 只看目標=台灣
-    |> filter(fn: (r) => r.target_geo_country_name == "Taiwan")
-
-tot   = base |> count(column: "_time") |> rename(columns: {_value:"rows_total"})
-missS = base |> filter(fn: (r) => not exists r.src_lat or not exists r.src_lon or r.src_lat == 0.0 or r.src_lon == 0.0)
-             |> count(column: "_time") |> rename(columns: {_value:"rows_missing_src"})
-missD = base |> filter(fn: (r) => not exists r.dst_lat or not exists r.dst_lon or r.dst_lat == 0.0 or r.dst_lon == 0.0)
-             |> count(column: "_time") |> rename(columns: {_value:"rows_missing_dst"})
-
-// 各來源國家有缺的統計（看是哪些國家沒座標）
-byCountry =
-  base
+    |> keep(columns: [
+      "attacker_geo_country_name",
+      "target_geo_country_name",
+      "src_lat","src_lon","dst_lat","dst_lon"
+    ])
     |> map(fn: (r) => ({
-      r with
-      missing_src: if (not exists r.src_lat or not exists r.src_lon or r.src_lat == 0.0 or r.src_lon == 0.0) then 1 else 0,
-      missing_dst: if (not exists r.dst_lat or not exists r.dst_lon or r.dst_lat == 0.0 or r.dst_lon == 0.0) then 1 else 0,
+          r with
+          src_lat_f: if exists r.src_lat then float(v: r.src_lat) else 0.0,
+          src_lon_f: if exists r.src_lon then float(v: r.src_lon) else 0.0,
+          dst_lat_f: if exists r.dst_lat then float(v: r.dst_lat) else 0.0,
+          dst_lon_f: if exists r.dst_lon then float(v: r.dst_lon) else 0.0
     }))
-    |> group(columns: ["attacker_geo_country_name"])
-    |> sum(columns: ["missing_src","missing_dst"])
-    |> rename(columns: {attacker_geo_country_name:"country"})
+    |> map(fn: (r) => ({
+          r with
+          src_ok: (r.src_lat_f != 0.0 and r.src_lon_f != 0.0),
+          dst_ok: (r.dst_lat_f != 0.0 and r.dst_lon_f != 0.0)
+    }))
 
-union(tables: [tot, missS, missD, byCountry])
+// 如只想看「目標=台灣」就打開下一行：
+  // |> filter(fn: (r) => r.target_geo_country_name == "Taiwan")
+
+base
+  |> group(columns: ["attacker_geo_country_name","target_geo_country_name"])
+  |> reduce(
+      identity: {missing: 0, total: 0},
+      fn: (acc, r) => ({
+          missing: acc.missing + (if r.src_ok and r.dst_ok then 0 else 1),
+          total:   acc.total   + 1
+      })
+  )
+  |> map(fn: (r) => ({ r with miss_ratio: if r.total > 0 then float(v: r.missing) / float(v: r.total) else 0.0 }))
+  |> sort(columns: ["missing"], desc: true)
+  |> limit(n: 50)
+
+
+
 
 
 

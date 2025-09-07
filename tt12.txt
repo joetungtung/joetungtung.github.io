@@ -1,100 +1,73 @@
 import "influxdata/influxdb/schema"
 
-// ===== 基底：取 arcsight_event，展開欄位成直欄 =====
+// ===== 只取「目的地 = 台灣」且座標合理的基礎資料 =====
 base =
   from(bucket: "SOC")
-    |> range(start: -12h)                           // ← 時窗自己調
+    |> range(start: -12h)                                      // 視需要調整時間窗
     |> filter(fn: (r) => r._measurement == "arcsight_event")
     |> schema.fieldsAsCols()
-    // 只保留我們需要的四個座標欄
     |> keep(columns: ["_time","src_lat","src_lon","dst_lat","dst_lon","target_geo_country_name"])
-    // 需要的話打開下一行：只看「目的地=台灣」
-    // |> filter(fn: (r) => r.target_geo_country_name == "Taiwan")
-    // 轉 float，避免字串/NaN 造成下游報錯
+    // 文字國別先卡「Taiwan」
+    |> filter(fn: (r) => r.target_geo_country_name == "Taiwan")
+    // 轉成數值，避免字串/NaN
     |> map(fn: (r) => ({
-        r with
-        src_lat: float(v: r.src_lat),
-        src_lon: float(v: r.src_lon),
-        dst_lat: float(v: r.dst_lat),
-        dst_lon: float(v: r.dst_lon),
-      }))
-    // 基本合理性：不得為 0，且落在合法經緯度範圍
+      r with
+      src_lat: float(v: r.src_lat), src_lon: float(v: r.src_lon),
+      dst_lat: float(v: r.dst_lat), dst_lon: float(v: r.dst_lon),
+    }))
+    // 台灣經緯度外框（保留合理的「目的地在台灣」）
     |> filter(fn: (r) =>
-        r.src_lat != 0.0 and r.src_lon != 0.0 and
-        r.dst_lat != 0.0 and r.dst_lon != 0.0 and
-        r.src_lat >= -90.0 and r.src_lat <= 90.0 and
-        r.dst_lat >= -90.0 and r.dst_lat <= 90.0 and
-        r.src_lon >= -180.0 and r.src_lon <= 180.0 and
-        r.dst_lon >= -180.0 and r.dst_lon <= 180.0
-      )
+      r.dst_lat >= 21.5 and r.dst_lat <= 25.5 and
+      r.dst_lon >= 119.5 and r.dst_lon <= 122.5 and
+      r.src_lat != 0.0 and r.src_lon != 0.0 and
+      r.src_lat >= -90.0 and r.src_lat <= 90.0 and
+      r.src_lon >= -180.0 and r.src_lon <= 180.0
+    )
 
-// ===== 拆成兩列：來源點(hop=0) 與 目的點(hop=1)，並產生 route_id =====
+// ===== 把每筆變成兩個節點（來源/目的），並加上同一條線的 route_id、節點順序 hop =====
 src =
   base
     |> map(fn: (r) => ({
-      _time: r._time,
+      r with
+      hop: 0,
       latitude:  r.src_lat,
       longitude: r.src_lon,
-      hop: 0,
-      route_id: string(v: r.src_lat) + "," + string(v: r.src_lon) + "=>" +
-                string(v: r.dst_lat) + "," + string(v: r.dst_lon),
+      route_id:  string(v: r.src_lat) + "," + string(v: r.src_lon) + " => " +
+                 string(v: r.dst_lat) + "," + string(v: r.dst_lon),
     }))
 
 dst =
   base
     |> map(fn: (r) => ({
-      _time: r._time,
+      r with
+      hop: 1,
       latitude:  r.dst_lat,
       longitude: r.dst_lon,
-      hop: 1,
-      route_id: string(v: r.src_lat) + "," + string(v: r.src_lon) + "=>" +
-                string(v: r.dst_lat) + "," + string(v: r.dst_lon),
+      route_id:  string(v: r.src_lat) + "," + string(v: r.src_lon) + " => " +
+                 string(v: r.dst_lat) + "," + string(v: r.dst_lon),
     }))
 
-// ===== 合併；每條路徑只留「最近」一對點（hop=0/1 各 1 筆）=====
-// 這裡只用 sort + limit，避免 _value/aggregate 相關錯誤
+// ===== 合併成路徑；只允許「起點不在台灣、終點在台灣」的兩點組合 =====
 routes =
   union(tables: [src, dst])
-    |> group(columns: ["route_id","hop"])
-    |> sort(columns: ["_time"], desc: true)
-    |> limit(n: 1)
-    |> group()  // 打平方便 Grafana 使用
+    // 保險：再次檢查點位是否符合起點/終點條件
+    |> map(fn: (r) => ({
+      r with
+      in_tw:  (r.latitude >= 21.5 and r.latitude <= 25.5) and
+              (r.longitude >= 119.5 and r.longitude <= 122.5)
+    }))
+    |> filter(fn: (r) =>
+      (r.hop == 0 and r.in_tw == false) or
+      (r.hop == 1 and r.in_tw == true)
+    )
+    // 每條 route_id 只要最新一對點（避免過多折線）
+    |> group(columns: ["route_id", "hop"])
+    |> window(every: 5m)
+    |> tail(n: 1)
+    |> window(every: inf)
+    |> group(columns: ["route_id"])
+    |> sort(columns: ["hop"], desc: false)
     |> keep(columns: ["_time","latitude","longitude","hop","route_id"])
-    |> limit(n: 5000)   // 防止一次回太多點，可再調
+    |> limit(n: 2000)
 
 routes
-
-
-
-
-
-
-import "influxdata/influxdb/schema"
-
-base =
-  from(bucket: "SOC")
-    |> range(start: -12h)                                 // 視窗自行調
-    |> filter(fn: (r) => r._measurement == "arcsight_event")
-    |> schema.fieldsAsCols()
-    // 先保留要用到的欄位（含國家）
-    |> keep(columns: ["_time","src_lat","src_lon","dst_lat","dst_lon","target_geo_country_name"])
-    // 只要「目的地 = 台灣」的事件
-    |> filter(fn: (r) => r.target_geo_country_name == "Taiwan")
-    // 轉型為數值，避免字串/NaN
-    |> map(fn: (r) => ({
-        r with
-        src_lat: float(v: r.src_lat),
-        src_lon: float(v: r.src_lon),
-        dst_lat: float(v: r.dst_lat),
-        dst_lon: float(v: r.dst_lon),
-      }))
-    // 基本合理性 + 目的地「確實在台灣」的經緯度範圍（粗略外框）
-    |> filter(fn: (r) =>
-        r.src_lat != 0.0 and r.src_lon != 0.0 and
-        r.dst_lat != 0.0 and r.dst_lon != 0.0 and
-        r.src_lat >= -90.0 and r.src_lat <= 90.0 and
-        r.src_lon >= -180.0 and r.src_lon <= 180.0 and
-        // 台灣大致範圍：21.5–25.5N, 119.5–122.5E
-        r.dst_lat >= 21.5 and r.dst_lat <= 25.5 and
-        r.dst_lon >= 119.5 and r.dst_lon <= 122.5
-      )

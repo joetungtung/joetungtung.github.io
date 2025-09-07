@@ -1,1 +1,2 @@
-invalid: runtime error @33:6-36:7: rename: rename error: column "_value" doesn't exist
+invalid: error @33:11-36:9: found unexpected argument acc (Expected `accumulator`) (argument fn) error @33:11-36:9: missing required argument accumulator (argument fn) error @47:11-50:9: found unexpected argument acc (Expected `accumulator`) (argument fn) error @47:11-50:9: missing required argument accumulator (argument fn)
+

@@ -97,6 +97,29 @@ union(tables:[src,dst])
 
 
 
+import "influxdata/influxdb/schema"
+
+from(bucket:"SOC")
+|> range(start:-7d)
+|> filter(fn:(r)=> r._measurement=="arcsight_event")
+|> filter(fn:(r)=> r.target_geo_country_name=="Taiwan")
+|> schema.fieldsAsCols()
+|> map(fn:(r)=> ({
+    r with
+    hasSrc: if exists r.src_lat and exists r.src_lon and
+               r.src_lat != 0.0 and r.src_lon != 0.0
+            then "ok" else "missing",
+    one: 1.0                               // ← 做一個常數欄位
+}))
+|> group(columns:["hasSrc","attacker_geo_country_name"])
+|> sum(column:"one")                        // ← 用 sum(one) 當事件數
+|> rename(columns:{one:"events"})
+|> sort(columns:["hasSrc","events"], desc:true)
+|> limit(n:50)
+
+
+
+
 
 
 

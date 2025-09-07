@@ -1,42 +1,49 @@
 import "influxdata/influxdb/schema"
 
-from(bucket: "SOC")
-  |> range(start: -12h)                               // 需要就改時間窗
-  |> filter(fn: (r) => r._measurement == "arcsight_event")
-  |> schema.fieldsAsCols()
-  |> keep(columns: [
-    "_time",
-    "attacker_address","attacker_geo_country_name",
-    "target_address","target_geo_country_name",
-    "src_lat","src_lon","dst_lat","dst_lon"
-  ])
-  // 先統一成 float，避免 "nan"/字串干擾
-  |> map(fn: (r) => ({
-    r with
-    src_lat_f: float(v: r.src_lat),
-    src_lon_f: float(v: r.src_lon),
-    dst_lat_f: float(v: r.dst_lat),
-    dst_lon_f: float(v: r.dst_lon),
-  }))
-  // 標記哪邊座標有問題，並給原因
-  |> map(fn: (r) => ({
-    r with
-    src_ok: (exists r.src_lat_f and exists r.src_lon_f and r.src_lat_f != 0.0 and r.src_lon_f != 0.0),
-    dst_ok: (exists r.dst_lat_f and exists r.dst_lon_f and r.dst_lat_f != 0.0 and r.dst_lon_f != 0.0),
-    reason:
-      if not (exists r.src_lat_f and exists r.src_lon_f) then "missing src coords"
-      else if not (exists r.dst_lat_f and exists r.dst_lon_f) then "missing dst coords"
-      else if (r.src_lat_f == 0.0 or r.src_lon_f == 0.0) then "zero src coords"
-      else if (r.dst_lat_f == 0.0 or r.dst_lon_f == 0.0) then "zero dst coords"
-      else ""
-  }))
-  // 只列出有問題的
-  |> filter(fn: (r) => not r.src_ok or not r.dst_ok)
-  |> keep(columns: [
-    "_time",
-    "attacker_address","attacker_geo_country_name",
-    "target_address","target_geo_country_name",
-    "src_lat_f","src_lon_f","dst_lat_f","dst_lon_f",
-    "src_ok","dst_ok","reason"
-  ])
-  |> limit(n: 200)
+// 先把需要的欄位取出與型別統一（避免 "nan" / 空字串）
+base =
+  from(bucket: "SOC")
+    |> range(start: -12h)
+    |> filter(fn: (r) => r._measurement == "arcsight_event")
+    |> schema.fieldsAsCols()
+    |> keep(columns: [
+      "_time",
+      "attacker_geo_country_name", "target_geo_country_name",
+      "src_lat", "src_lon", "dst_lat", "dst_lon"
+    ])
+    |> map(fn: (r) => ({
+      r with
+      src_lat_f: float(v: r.src_lat),
+      src_lon_f: float(v: r.src_lon),
+      dst_lat_f: float(v: r.dst_lat),
+      dst_lon_f: float(v: r.dst_lon),
+    }))
+    |> map(fn: (r) => ({
+      r with
+      src_ok: (exists r.src_lat_f and exists r.src_lon_f and r.src_lat_f != 0.0 and r.src_lon_f != 0.0),
+      dst_ok: (exists r.dst_lat_f and exists r.dst_lon_f and r.dst_lat_f != 0.0 and r.dst_lon_f != 0.0),
+    }))
+
+// 1) 缺「來源」座標的國家（依筆數多寡排序）
+base
+  |> filter(fn: (r) => not r.src_ok)
+  |> group(columns: ["attacker_geo_country_name"])   // 以來源國家分組
+  |> count()                                         // 計算每國家缺失的筆數
+  |> rename(columns: {
+      attacker_geo_country_name: "country",
+      _value: "missing_events"
+    })
+  |> sort(columns: ["missing_events"], desc: true)
+  |> yield(name: "missing_src_countries")
+
+// 2) 缺「目的」座標的國家（依筆數多寡排序）
+base
+  |> filter(fn: (r) => not r.dst_ok)
+  |> group(columns: ["target_geo_country_name"])     // 以目的國家分組
+  |> count()
+  |> rename(columns: {
+      target_geo_country_name: "country",
+      _value: "missing_events"
+    })
+  |> sort(columns: ["missing_events"], desc: true)
+  |> yield(name: "missing_dst_countries")

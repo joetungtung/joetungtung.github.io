@@ -105,3 +105,8 @@ routes =
     |> keep(columns: ["_time","latitude","longitude","hop","route_id"])
 
 routes
+
+
+
+invalid: error @35:8-44:6: missing pipe argument error @37:12-43:12: expected [stream[A]] (array) but found stream[{ B with src_lon: F, src_lon: float, src_lat: E, src_lat: float, route_id: string, longitude: float, latitude: float, hop: int, dst_lon: D, dst_lon: float, dst_lat: C, dst_lat: float, }] (argument tables) error @37:12-43:12: expected stream[A] but found { B with src_lon: F, src_lon: float, src_lat: E, src_lat: float, route_id: string, longitude: float, latitude: float, hop: int, dst_lon: D, dst_lon: float, dst_lat: C, dst_lat: float, } (record) (argument tables)
+

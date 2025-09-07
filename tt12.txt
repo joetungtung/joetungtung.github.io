@@ -2,7 +2,7 @@ import "influxdata/influxdb/schema"
 
 base =
   from(bucket: "SOC")
-    |> range(start: -12h)                           // 需要就調整時間窗
+    |> range(start: -12h)                           // 調整時間窗
     |> filter(fn: (r) => r._measurement == "arcsight_event")
     |> schema.fieldsAsCols()
     |> keep(columns: [
@@ -10,7 +10,6 @@ base =
       "attacker_geo_country_name","target_geo_country_name",
       "src_lat","src_lon","dst_lat","dst_lon"
     ])
-    // 把座標轉成浮點，並標記是否有效(不是 0)
     |> map(fn: (r) => ({
       r with
       src_lat_f: if exists r.src_lat then float(v: r.src_lat) else 0.0,
@@ -23,40 +22,43 @@ base =
       src_ok: (r.src_lat_f != 0.0 and r.src_lon_f != 0.0),
       dst_ok: (r.dst_lat_f != 0.0 and r.dst_lon_f != 0.0)
     }))
-    // 若只想看「目標=台灣」就打開下一行
-    // |> filter(fn: (r) => r.target_geo_country_name == "Taiwan")
 
-// 來源座標缺失：依「來源國」統計
+// 缺來源座標
 missing_src =
   base
     |> filter(fn: (r) => r.src_ok == false)
     |> group(columns: ["attacker_geo_country_name"])
     |> reduce(
-      identity: {country: "", missing: 0},
+      identity: {country: "", src_missing: 0},
       fn: (r, accumulator) => ({
         country: r.attacker_geo_country_name,
-        missing: accumulator.missing + 1
+        src_missing: accumulator.src_missing + 1
       })
     )
-    |> map(fn: (r) => ({ r with kind: "src" }))
 
-// 目的座標缺失：依「目的國」統計
+// 缺目的座標
 missing_dst =
   base
     |> filter(fn: (r) => r.dst_ok == false)
     |> group(columns: ["target_geo_country_name"])
     |> reduce(
-      identity: {country: "", missing: 0},
+      identity: {country: "", dst_missing: 0},
       fn: (r, accumulator) => ({
         country: r.target_geo_country_name,
-        missing: accumulator.missing + 1
+        dst_missing: accumulator.dst_missing + 1
       })
     )
-    |> map(fn: (r) => ({ r with kind: "dst" }))
 
-// 合併並展成 country | src | dst
+// 合併成 country | src_missing | dst_missing
 union(tables: [missing_src, missing_dst])
   |> group(columns: ["country"])
-  |> pivot(rowKey: ["country"], columnKey: ["kind"], valueColumn: "missing")
-  |> sort(columns: ["src","dst"], desc: true)
+  |> reduce(
+      identity: {country: "", src_missing: 0, dst_missing: 0},
+      fn: (r, accumulator) => ({
+        country: if r.country != "" then r.country else accumulator.country,
+        src_missing: accumulator.src_missing + (if exists r.src_missing then r.src_missing else 0),
+        dst_missing: accumulator.dst_missing + (if exists r.dst_missing then r.dst_missing else 0)
+      })
+  )
+  |> sort(columns: ["src_missing","dst_missing"], desc: true)
   |> yield(name: "missing_countries")

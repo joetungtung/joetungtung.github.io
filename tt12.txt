@@ -1,9 +1,9 @@
 import "influxdata/influxdb/schema"
 
-// 先把需要的欄位取出與型別統一（避免 "nan" / 空字串）
+// 先把資料攤成欄、轉型、標記哪些行有/沒有座標
 base =
   from(bucket: "SOC")
-    |> range(start: -12h)
+    |> range(start: -12h)                             // 視需要改期間
     |> filter(fn: (r) => r._measurement == "arcsight_event")
     |> schema.fieldsAsCols()
     |> keep(columns: [
@@ -27,8 +27,9 @@ base =
 // 1) 缺「來源」座標的國家（依筆數多寡排序）
 base
   |> filter(fn: (r) => not r.src_ok)
-  |> group(columns: ["attacker_geo_country_name"])   // 以來源國家分組
-  |> count()                                         // 計算每國家缺失的筆數
+  |> group(columns: ["attacker_geo_country_name"])
+  |> map(fn: (r) => ({ r with one: 1.0 }))           // <- 自備可聚合的數值欄
+  |> sum(column: "one")                               // 統計每組的缺失筆數
   |> rename(columns: {
       attacker_geo_country_name: "country",
       _value: "missing_events"
@@ -39,8 +40,9 @@ base
 // 2) 缺「目的」座標的國家（依筆數多寡排序）
 base
   |> filter(fn: (r) => not r.dst_ok)
-  |> group(columns: ["target_geo_country_name"])     // 以目的國家分組
-  |> count()
+  |> group(columns: ["target_geo_country_name"])
+  |> map(fn: (r) => ({ r with one: 1.0 }))
+  |> sum(column: "one")
   |> rename(columns: {
       target_geo_country_name: "country",
       _value: "missing_events"

@@ -63,3 +63,38 @@ routes =
     |> limit(n: 5000)   // 防止一次回太多點，可再調
 
 routes
+
+
+
+
+
+
+import "influxdata/influxdb/schema"
+
+base =
+  from(bucket: "SOC")
+    |> range(start: -12h)                                 // 視窗自行調
+    |> filter(fn: (r) => r._measurement == "arcsight_event")
+    |> schema.fieldsAsCols()
+    // 先保留要用到的欄位（含國家）
+    |> keep(columns: ["_time","src_lat","src_lon","dst_lat","dst_lon","target_geo_country_name"])
+    // 只要「目的地 = 台灣」的事件
+    |> filter(fn: (r) => r.target_geo_country_name == "Taiwan")
+    // 轉型為數值，避免字串/NaN
+    |> map(fn: (r) => ({
+        r with
+        src_lat: float(v: r.src_lat),
+        src_lon: float(v: r.src_lon),
+        dst_lat: float(v: r.dst_lat),
+        dst_lon: float(v: r.dst_lon),
+      }))
+    // 基本合理性 + 目的地「確實在台灣」的經緯度範圍（粗略外框）
+    |> filter(fn: (r) =>
+        r.src_lat != 0.0 and r.src_lon != 0.0 and
+        r.dst_lat != 0.0 and r.dst_lon != 0.0 and
+        r.src_lat >= -90.0 and r.src_lat <= 90.0 and
+        r.src_lon >= -180.0 and r.src_lon <= 180.0 and
+        // 台灣大致範圍：21.5–25.5N, 119.5–122.5E
+        r.dst_lat >= 21.5 and r.dst_lat <= 25.5 and
+        r.dst_lon >= 119.5 and r.dst_lon <= 122.5
+      )

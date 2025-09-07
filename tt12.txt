@@ -1,9 +1,8 @@
 import "influxdata/influxdb/schema"
 
-// ---- 基底：取出必要欄位並判斷座標是否齊全 ----
 base =
   from(bucket: "SOC")
-    |> range(start: -12h)                           // ← 時間窗可自行調整
+    |> range(start: -12h)                                  // 需要就調
     |> filter(fn: (r) => r._measurement == "arcsight_event")
     |> schema.fieldsAsCols()
     |> keep(columns: [
@@ -11,7 +10,7 @@ base =
       "attacker_geo_country_name", "target_geo_country_name",
       "src_lat", "src_lon", "dst_lat", "dst_lon"
     ])
-    // 轉型並標記是否有有效座標（非 0）
+    // 轉成浮點 + 標記是否有有效座標（非 0）
     |> map(fn: (r) => ({
       r with
       src_lat_f: if exists r.src_lat then float(v: r.src_lat) else 0.0,
@@ -25,36 +24,30 @@ base =
       dst_ok: (r.dst_lat_f != 0.0 and r.dst_lon_f != 0.0),
     }))
 
-// ---- 缺「來源座標」各國筆數（用 _time 計數，避免 _value 陷阱）----
+// 缺「來源座標」各國筆數
 missing_src =
   base
     |> filter(fn: (r) => r.src_ok == false)
     |> group(columns: ["attacker_geo_country_name"])
-    |> count(column: "_time")
-    |> rename(columns: {
-      _value: "missing", 
-      attacker_geo_country_name: "country"
-    })
+    |> count(column: "src_lat_f")
+    |> rename(columns: { _value: "missing", attacker_geo_country_name: "country" })
     |> map(fn: (r) => ({ r with kind: "src" }))
     |> keep(columns: ["country", "kind", "missing"])
 
-// ---- 缺「目的座標」各國筆數 ----
+// 缺「目的座標」各國筆數
 missing_dst =
   base
     |> filter(fn: (r) => r.dst_ok == false)
     |> group(columns: ["target_geo_country_name"])
-    |> count(column: "_time")
-    |> rename(columns: {
-      _value: "missing", 
-      target_geo_country_name: "country"
-    })
+    |> count(column: "dst_lat_f")
+    |> rename(columns: { _value: "missing", target_geo_country_name: "country" })
     |> map(fn: (r) => ({ r with kind: "dst" }))
     |> keep(columns: ["country", "kind", "missing"])
 
-// ---- 合併成一張表：country / src / dst 三欄 ----
+// 合併成 country / src / dst 三欄
 union(tables: [missing_src, missing_dst])
   |> group(columns: ["country"])
   |> pivot(rowKey: ["country"], columnKey: ["kind"], valueColumn: "missing")
-  |> rename(columns: {src: "src", dst: "dst"})     // 保險起見，確保欄名固定
+  |> rename(columns: {src: "src", dst: "dst"})
   |> sort(columns: ["src", "dst"], desc: true)
   |> yield(name: "missing_countries")

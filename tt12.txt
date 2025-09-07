@@ -1,9 +1,9 @@
 import "influxdata/influxdb/schema"
 
-// 先把資料轉成欄、型別，並判斷是否有座標
+// 先把欄位攤平並轉型，標註是否有座標
 base =
   from(bucket: "SOC")
-    |> range(start: -12h)
+    |> range(start: -12h)  // 時間窗可調：-24h、-7d...
     |> filter(fn: (r) => r._measurement == "arcsight_event")
     |> schema.fieldsAsCols()
     |> keep(columns: [
@@ -11,43 +11,45 @@ base =
       "attacker_geo_country_name", "target_geo_country_name",
       "src_lat", "src_lon", "dst_lat", "dst_lon"
     ])
+    // 轉為數值；若欄位不存在則補 0.0（避免 "nan"/空字串害死型別）
     |> map(fn: (r) => ({
       r with
-      src_lat_f: float(v: r.src_lat),
-      src_lon_f: float(v: r.src_lon),
-      dst_lat_f: float(v: r.dst_lat),
-      dst_lon_f: float(v: r.dst_lon),
+      src_lat_f: if exists r.src_lat then float(v: r.src_lat) else 0.0,
+      src_lon_f: if exists r.src_lon then float(v: r.src_lon) else 0.0,
+      dst_lat_f: if exists r.dst_lat then float(v: r.dst_lat) else 0.0,
+      dst_lon_f: if exists r.dst_lon then float(v: r.dst_lon) else 0.0,
     }))
+    // 標記「座標是否齊全且非 0」
     |> map(fn: (r) => ({
       r with
-      src_ok: (exists r.src_lat_f and exists r.src_lon_f and r.src_lat_f != 0.0 and r.src_lon_f != 0.0),
-      dst_ok: (exists r.dst_lat_f and exists r.dst_lon_f and r.dst_lat_f != 0.0 and r.dst_lon_f != 0.0),
+      src_ok: (r.src_lat_f != 0.0 and r.src_lon_f != 0.0),
+      dst_ok: (r.dst_lat_f != 0.0 and r.dst_lon_f != 0.0),
     }))
 
 // 1) 缺「來源座標」的國家清單（依缺失筆數排序）
 base
-  |> filter(fn: (r) => not r.src_ok)
-  |> group(columns: ["attacker_geo_country_name"], mode: "by")
+  |> filter(fn: (r) => r.src_ok == false)
+  |> group(columns: ["attacker_geo_country_name"])
   |> reduce(
-      identity: {country: "", missing_events: 0.0},
-      fn: (r, acc) => ({
+      fn: (r, accumulator) => ({
         country: r.attacker_geo_country_name,
-        missing_events: acc.missing_events + 1.0
-      })
+        missing_events: accumulator.missing_events + 1.0
+      }),
+      identity: {country: "", missing_events: 0.0}
     )
   |> sort(columns: ["missing_events"], desc: true)
   |> yield(name: "missing_src_countries")
 
 // 2) 缺「目的座標」的國家清單（依缺失筆數排序）
 base
-  |> filter(fn: (r) => not r.dst_ok)
-  |> group(columns: ["target_geo_country_name"], mode: "by")
+  |> filter(fn: (r) => r.dst_ok == false)
+  |> group(columns: ["target_geo_country_name"])
   |> reduce(
-      identity: {country: "", missing_events: 0.0},
-      fn: (r, acc) => ({
+      fn: (r, accumulator) => ({
         country: r.target_geo_country_name,
-        missing_events: acc.missing_events + 1.0
-      })
+        missing_events: accumulator.missing_events + 1.0
+      }),
+      identity: {country: "", missing_events: 0.0}
     )
   |> sort(columns: ["missing_events"], desc: true)
   |> yield(name: "missing_dst_countries")

@@ -1,9 +1,9 @@
 // === 按國家統計：哪裡缺經緯度（src 與 dst 分開） ===
 
 src_missing =
-from(bucket: "YOUR_BUCKET")
-  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)
-  |> filter(fn: (r) => r._measurement == "YOUR_MEASUREMENT")
+from(bucket: "SOC")
+  |> range(start: -12h)
+  |> filter(fn: (r) => r._measurement == "arcsight_event")
   |> filter(fn: (r) => r._field == "src_lat" or r._field == "src_lon")
   |> pivot(rowKey: ["_time","attacker_geo_country_name"], columnKey: ["_field"], valueColumn: "_value")
   // 任一欄不存在/為空就記 1，兩者都存在記 0
@@ -18,9 +18,9 @@ from(bucket: "YOUR_BUCKET")
   |> keep(columns: ["country","role","missing_count"])
 
 dst_missing =
-from(bucket: "YOUR_BUCKET")
-  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)
-  |> filter(fn: (r) => r._measurement == "YOUR_MEASUREMENT")
+from(bucket: "SOC")
+  |> range(start: -12h)
+  |> filter(fn: (r) => r._measurement == "arcsight_event")
   |> filter(fn: (r) => r._field == "dst_lat" or r._field == "dst_lon")
   |> pivot(rowKey: ["_time","target_geo_country_name"], columnKey: ["_field"], valueColumn: "_value")
   |> map(fn: (r) => ({ r with dst_missing_flag: if (exists r.dst_lat and exists r.dst_lon) then 0 else 1 }))

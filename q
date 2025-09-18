@@ -1,61 +1,41 @@
 import "influxdata/influxdb/schema"
+import "strings"
 
-// 先把資料整成想要的欄位、型別
-base =
-  from(bucket: "SOC")
-    |> range(start: -6h)                                   // 需要就改時間窗
-    |> filter(fn: (r) => r._measurement == "arcsight_event")
-    |> filter(fn: (r) => r.target_geo_country_name == "Taiwan")   // 只保留「目的地＝台灣」
-    |> schema.fieldsAsCols()
-    |> keep(columns: ["_time","src_lat","src_lon","dst_lat","dst_lon"])
-    |> map(fn: (r) => ({
-        r with
-        src_lat: float(v: r.src_lat),
-        src_lon: float(v: r.src_lon),
-        dst_lat: float(v: r.dst_lat),
-        dst_lon: float(v: r.dst_lon),
-    }))
-    |> filter(fn: (r) =>
-        exists r.src_lat and exists r.src_lon and
-        exists r.dst_lat and exists r.dst_lon and
-        r.src_lat != 0.0 and r.src_lon != 0.0 and
-        r.dst_lat != 0.0 and r.dst_lon != 0.0
-    )
+// 小工具：清理國名（去空白、排除空字串與 "nan"）
+clean = (name) => {
+  n = strings.trimSpace(v: name)
+  return if n == "" or strings.toLower(v: n) == "nan" then "" else n
+}
 
-// 拆成來源點與目的點兩條 stream
-src =
-  base
-    |> map(fn: (r) => ({
-        r with
-        hop: 0,
-        latitude:  r.src_lat,
-        longitude: r.src_lon,
-        route_id:  string(v: r.src_lat) + "," + string(v: r.src_lon) + "=>" +
-                   string(v: r.dst_lat) + "," + string(v: r.dst_lon)
-    }))
+// ========= src 缺經緯度 by 攻擊國家 =========
+src_missing =
+from(bucket: "SOC")
+  |> range(start: -12h)
+  |> filter(fn: (r) => r._measurement == "arcsight_event")
+  |> schema.fieldsAsCols()
+  |> map(fn: (r) => ({ r with _country: clean(name: r.attacker_geo_country_name) }))
+  |> filter(fn: (r) => r._country != "")
+  |> map(fn: (r) => ({ r with _flag: if (exists r.src_lat and exists r.src_lon) then 0 else 1 }))
+  |> group(columns: ["_country"])
+  |> sum(column: "_flag")
+  |> map(fn: (r) => ({ country: r._country, role: "src", missing_count: r._flag }))
+  |> keep(columns: ["country","role","missing_count"])
 
-dst =
-  base
-    |> map(fn: (r) => ({
-        r with
-        hop: 1,
-        latitude:  r.dst_lat,
-        longitude: r.dst_lon,
-        route_id:  string(v: r.src_lat) + "," + string(v: r.src_lon) + "=>" +
-                   string(v: r.dst_lat) + "," + string(v: r.dst_lon)
-    }))
+// ========= dst 缺經緯度 by 目標國家 =========
+dst_missing =
+from(bucket: "SOC")
+  |> range(start: -12h)
+  |> filter(fn: (r) => r._measurement == "arcsight_event")
+  |> schema.fieldsAsCols()
+  |> map(fn: (r) => ({ r with _country: clean(name: r.target_geo_country_name) }))
+  |> filter(fn: (r) => r._country != "")
+  |> map(fn: (r) => ({ r with _flag: if (exists r.dst_lat and exists r.dst_lon) then 0 else 1 }))
+  |> group(columns: ["_country"])
+  |> sum(column: "_flag")
+  |> map(fn: (r) => ({ country: r._country, role: "dst", missing_count: r._flag }))
+  |> keep(columns: ["country","role","missing_count"])
 
-// 合併、依 route 分組，並確保「來源在前、目的在後」
-routes =
-  union(tables: [src, dst])
-    |> group(columns: ["route_id"])
-    |> sort(columns: ["hop"], desc: false)
-    |> keep(columns: ["_time","latitude","longitude","hop","route_id"])
-
-// 最終輸出
-routes
-
-
-
-
-
+// ========= 角色分開的排行榜（src/dst） =========
+union(tables: [src_missing, dst_missing])
+  |> sort(columns: ["missing_count","country","role"], desc: true)
+  |> limit(n: 200)

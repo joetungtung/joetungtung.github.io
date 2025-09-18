@@ -35,3 +35,68 @@ from(bucket: "SOC")
   |> rename(columns: {_cnt: "count"})
   |> sort(columns: ["count","_country_raw"], desc: true)
   |> keep(columns: ["_country_raw","count"])
+
+
+
+
+
+
+
+import "influxdata/influxdb/schema"
+import "strings"
+
+country = "Taiwan"
+
+// --------- SRC（攻擊端）---------
+src_cases =
+from(bucket: "SOC")
+  |> range(start: -12h)
+  |> filter(fn: (r) => r._measurement == "arcsight_event")
+  |> schema.fieldsAsCols()
+  |> filter(fn: (r) => strings.trimSpace(v: string(v: r.attacker_geo_country_name)) == country)
+  // 判斷「看起來是有效座標」：存在且不是空字串/nan/null，且不是 0
+  |> map(fn: (r) => ({
+        r with
+        _lat_ok:  exists r.src_lat and strings.toLower(v: strings.trimSpace(v: string(v: r.src_lat)))  != "" and strings.toLower(v: strings.trimSpace(v: string(v: r.src_lat)))  != "nan" and strings.toLower(v: strings.trimSpace(v: string(v: r.src_lat)))  != "null" and (if exists r.src_lat then (float(v: string(v: r.src_lat)) != 0.0) else false),
+        _lon_ok:  exists r.src_lon and strings.toLower(v: strings.trimSpace(v: string(v: r.src_lon)))  != "" and strings.toLower(v: strings.trimSpace(v: string(v: r.src_lon)))  != "nan" and strings.toLower(v: strings.trimSpace(v: string(v: r.src_lon)))  != "null" and (if exists r.src_lon then (float(v: string(v: r.src_lon)) != 0.0) else false)
+  }))
+  |> map(fn: (r) => ({
+        r with
+        _case: if (r._lat_ok and r._lon_ok) then "present"
+               else if (not r._lat_ok and not r._lon_ok) then "both_missing"
+               else if (not r._lat_ok) then "lat_missing"
+               else "lon_missing",
+        _cnt: 1
+  }))
+  |> group(columns: ["_case"])
+  |> sum(column: "_cnt")
+  |> map(fn: (r) => ({ role: "src", case: r._case, count: r._cnt }))
+  |> keep(columns: ["role","case","count"])
+
+// --------- DST（目標端）---------
+dst_cases =
+from(bucket: "SOC")
+  |> range(start: -12h)
+  |> filter(fn: (r) => r._measurement == "arcsight_event")
+  |> schema.fieldsAsCols()
+  |> filter(fn: (r) => strings.trimSpace(v: string(v: r.target_geo_country_name)) == country)
+  |> map(fn: (r) => ({
+        r with
+        _lat_ok:  exists r.dst_lat and strings.toLower(v: strings.trimSpace(v: string(v: r.dst_lat)))  != "" and strings.toLower(v: strings.trimSpace(v: string(v: r.dst_lat)))  != "nan" and strings.toLower(v: strings.trimSpace(v: string(v: r.dst_lat)))  != "null" and (if exists r.dst_lat then (float(v: string(v: r.dst_lat)) != 0.0) else false),
+        _lon_ok:  exists r.dst_lon and strings.toLower(v: strings.trimSpace(v: string(v: r.dst_lon)))  != "" and strings.toLower(v: strings.trimSpace(v: string(v: r.dst_lon)))  != "nan" and strings.toLower(v: strings.trimSpace(v: string(v: r.dst_lon)))  != "null" and (if exists r.dst_lon then (float(v: string(v: r.dst_lon)) != 0.0) else false)
+  }))
+  |> map(fn: (r) => ({
+        r with
+        _case: if (r._lat_ok and r._lon_ok) then "present"
+               else if (not r._lat_ok and not r._lon_ok) then "both_missing"
+               else if (not r._lat_ok) then "lat_missing"
+               else "lon_missing",
+        _cnt: 1
+  }))
+  |> group(columns: ["_case"])
+  |> sum(column: "_cnt")
+  |> map(fn: (r) => ({ role: "dst", case: r._case, count: r._cnt }))
+  |> keep(columns: ["role","case","count"])
+
+union(tables: [src_cases, dst_cases])
+  |> sort(columns: ["role","count","case"], desc: true)

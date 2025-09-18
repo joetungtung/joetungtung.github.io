@@ -10,6 +10,7 @@ from(bucket: "SOC")
 
 
 
+
 import "influxdata/influxdb/schema"
 import "strings"
 
@@ -17,18 +18,20 @@ from(bucket: "SOC")
   |> range(start: -12h)
   |> filter(fn: (r) => r._measurement == "arcsight_event")
   |> schema.fieldsAsCols()
-  // 這裡抓「攻擊端」國家；若要看目標端，把 attacker_geo_country_name 換成 target_geo_country_name
+  // 依你的實際欄位名調整 attacker_geo_country_name / target_geo_country_name
   |> map(fn: (r) => ({ r with _country_raw: strings.trimSpace(v: string(v: r.attacker_geo_country_name)) }))
   |> filter(fn: (r) => exists r._country_raw and r._country_raw != "")
-  // 只挑出看起來像 Taiwan 的字樣（taiwan / province of china / roc）
+  // 鎖定疑似 Taiwan 的寫法
   |> map(fn: (r) => ({ r with _lc: strings.toLower(v: r._country_raw) }))
   |> filter(fn: (r) =>
       strings.containsStr(v: r._lc, substr: "taiwan") or
       strings.containsStr(v: r._lc, substr: "province of china") or
       r._lc == "roc"
     )
+  // 用常數 1 當計數旗標，再按寫法分組加總
+  |> map(fn: (r) => ({ r with _cnt: 1 }))
   |> group(columns: ["_country_raw"])
-  |> count(column: "_time")             // 計算各種寫法出現次數
-  |> rename(columns: {_value: "count"})
+  |> sum(column: "_cnt")
+  |> rename(columns: {_cnt: "count"})
   |> sort(columns: ["count","_country_raw"], desc: true)
   |> keep(columns: ["_country_raw","count"])

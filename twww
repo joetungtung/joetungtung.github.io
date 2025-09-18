@@ -1,18 +1,64 @@
-為什麼 Imperva 顯示 Passed 6 Gbps，但你們電路只有 1 Gbps，卻沒有「爆掉」？
+import "influxdata/influxdb/schema"
 
-1. 6 Gbps 是雲端側「瞬時放行峰值」
-	•	Imperva 的 Passed 值，通常是指在清洗中心 出口（往你公司回送流量的 PoP）量測到的峰值。
-	•	這並不代表 你公司實際收到了 6 Gbps，而是「往回傳」的流量上限。
+base =
+  from(bucket: "SOC")
+    |> range(start: -12h)                           // 調整時間窗
+    |> filter(fn: (r) => r._measurement == "arcsight_event")
+    |> schema.fieldsAsCols()
+    |> keep(columns: [
+      "_time",
+      "attacker_geo_country_name","target_geo_country_name",
+      "src_lat","src_lon","dst_lat","dst_lon"
+    ])
+    |> map(fn: (r) => ({
+      r with
+      src_lat_f: if exists r.src_lat then float(v: r.src_lat) else 0.0,
+      src_lon_f: if exists r.src_lon then float(v: r.src_lon) else 0.0,
+      dst_lat_f: if exists r.dst_lat then float(v: r.dst_lat) else 0.0,
+      dst_lon_f: if exists r.dst_lon then float(v: r.dst_lon) else 0.0
+    }))
+    |> map(fn: (r) => ({
+      r with
+      src_ok: (r.src_lat_f != 0.0 and r.src_lon_f != 0.0),
+      dst_ok: (r.dst_lat_f != 0.0 and r.dst_lon_f != 0.0)
+    }))
 
-⸻
+// 缺來源座標
+missing_src =
+  base
+    |> filter(fn: (r) => r.src_ok == false)
+    |> group(columns: ["attacker_geo_country_name"])
+    |> reduce(
+      identity: {country: "", src_missing: 0},
+      fn: (r, accumulator) => ({
+        country: r.attacker_geo_country_name,
+        src_missing: accumulator.src_missing + 1
+      })
+    )
 
-2. 實際流量會受制於電路帶寬
-	•	你公司電路最高只有 1 Gbps burst，所以無論 Imperva往回丟多少，最後能進公司的上限就是 1 Gbps。
-	•	超過 1 Gbps 的流量會在電信商或 Imperva PoP 的鏈路上 被丟棄（drop），所以不會真的進到你內部。
+// 缺目的座標
+missing_dst =
+  base
+    |> filter(fn: (r) => r.dst_ok == false)
+    |> group(columns: ["target_geo_country_name"])
+    |> reduce(
+      identity: {country: "", dst_missing: 0},
+      fn: (r, accumulator) => ({
+        country: r.target_geo_country_name,
+        dst_missing: accumulator.dst_missing + 1
+      })
+    )
 
-⸻
-
-3. 數據落差的原因
-	•	Imperva 報的 Passed 6 Gbps = 清洗後判斷可能是正常流量，理論上送回的峰值。
-	•	但你的電路「物理瓶頸」只允許 1 Gbps，Radware 在公司端實際能觀測到的也不會超過 1 Gbps。
-👉 所以在 Radware 報表裡，你看不到那個 6 Gbps，而是遠低於它。
+// 合併成 country | src_missing | dst_missing
+union(tables: [missing_src, missing_dst])
+  |> group(columns: ["country"])
+  |> reduce(
+      identity: {country: "", src_missing: 0, dst_missing: 0},
+      fn: (r, accumulator) => ({
+        country: if r.country != "" then r.country else accumulator.country,
+        src_missing: accumulator.src_missing + (if exists r.src_missing then r.src_missing else 0),
+        dst_missing: accumulator.dst_missing + (if exists r.dst_missing then r.dst_missing else 0)
+      })
+  )
+  |> sort(columns: ["src_missing","dst_missing"], desc: true)
+  |> yield(name: "missing_countries")

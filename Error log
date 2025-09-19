@@ -1,2 +1,1 @@
-invalid: error @16:52-16:58: undefined identifier isnull error @16:76-16:82: undefined identifier isnull error @35:52-35:58: undefined identifier isnull error @35:76-35:82: undefined identifier isnull
-
+invalid: failed to initialize execute state: tried to produce more than one result with the name "_result"

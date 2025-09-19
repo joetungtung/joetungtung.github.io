@@ -125,18 +125,15 @@ union(tables: [src_cases, dst_cases])
 
 
 
-
 import "influxdata/influxdb/schema"
 import "strings"
 
-// === 把整個查詢包成一個函式，只輸出一次 ===
 wide = () => {
   base =
     from(bucket: "SOC")
       |> range(start: v.timeRangeStart, stop: v.timeRangeStop)
       |> filter(fn: (r) => r._measurement == "arcsight_event")
       |> schema.fieldsAsCols()
-      // 先丟掉容易殘留在 group key 的欄位，避免分成多個 frame
       |> drop(columns: ["_start","_stop","_measurement"])
 
   // ---------- SRC by country ----------
@@ -186,32 +183,34 @@ wide = () => {
       |> keep(columns: ["country","role","case","count"])
 
   // ---------- 合併 → pivot 成寬表 ----------
-  union(tables: [src_by_country, dst_by_country])
-    |> group(columns: ["country","role"]) // 收斂 group key
-    |> pivot(rowKey: ["country","role"], columnKey: ["case"], valueColumn: "count")
-    |> group()                            // 完全去 key，讓 Grafana 只得到一張表
-    |> map(fn: (r) => ({
-        r with
-        present:       if exists r.present then r.present else 0,
-        both_missing:  if exists r.both_missing then r.both_missing else 0,
-        lat_missing:   if exists r.lat_missing then r.lat_missing else 0,
-        lon_missing:   if exists r.lon_missing then r.lon_missing else 0,
-    }))
-    |> map(fn: (r) => ({
-        r with
-        total: r.present + r.both_missing + r.lat_missing + r.lon_missing,
-        present_ratio: if (r.present + r.both_missing + r.lat_missing + r.lon_missing) > 0
-                       then float(v: r.present) / float(v: r.total)
-                       else 0.0
-    }))
-    |> keep(columns: ["country","role","present","both_missing","lat_missing","lon_missing","total","present_ratio"])
-    |> sort(columns: ["present_ratio","present","total","country","role"], desc: true)
-    |> limit(n: 200)
+  return
+    union(tables: [src_by_country, dst_by_country])
+      |> group(columns: ["country","role"])
+      |> pivot(rowKey: ["country","role"], columnKey: ["case"], valueColumn: "count")
+      |> group()
+      |> map(fn: (r) => ({
+          r with
+          present:       if exists r.present then r.present else 0,
+          both_missing:  if exists r.both_missing then r.both_missing else 0,
+          lat_missing:   if exists r.lat_missing then r.lat_missing else 0,
+          lon_missing:   if exists r.lon_missing then r.lon_missing else 0,
+      }))
+      |> map(fn: (r) => ({
+          r with
+          total: r.present + r.both_missing + r.lat_missing + r.lon_missing,
+          present_ratio: if (r.present + r.both_missing + r.lat_missing + r.lon_missing) > 0
+                         then float(v: r.present) / float(v: r.total)
+                         else 0.0
+      }))
+      |> keep(columns: ["country","role","present","both_missing","lat_missing","lon_missing","total","present_ratio"])
+      |> sort(columns: ["present_ratio","present","total","country","role"], desc: true)
+      |> limit(n: 200)
 }
 
-// 只輸出一次結果，避免 _result 名稱衝突
+// 只輸出一次結果
 wide()
   |> yield(name: "wide")
+
 
 
 

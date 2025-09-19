@@ -184,3 +184,36 @@ union(tables: [src_by_country, dst_by_country])
   |> sort(columns: ["count","country","role","case"], desc: true)
   |> limit(n: 200)  // 想看更多就放大
 
+
+
+
+// 之前：union(tables: [src_by_country, dst_by_country]) 之後接這段
+union(tables: [src_by_country, dst_by_country])
+  // 先把 group key 整到只剩 country、role（避免每個國家各成一個 frame）
+  |> group(columns: ["country","role"])
+  |> pivot(
+      rowKey: ["country","role"],
+      columnKey: ["case"],
+      valueColumn: "count"
+  )
+  // 再把 group key 全清掉，讓 Grafana 只拿到「一張表」
+  |> group()
+  // 沒有的欄位補 0，順便算總數與占比
+  |> map(fn: (r) => ({
+      r with
+      present:       if exists r.present then r.present else 0,
+      both_missing:  if exists r.both_missing then r.both_missing else 0,
+      lat_missing:   if exists r.lat_missing then r.lat_missing else 0,
+      lon_missing:   if exists r.lon_missing then r.lon_missing else 0,
+  }))
+  |> map(fn: (r) => ({
+      r with
+      total: r.present + r.both_missing + r.lat_missing + r.lon_missing,
+      present_ratio: if (r.present + r.both_missing + r.lat_missing + r.lon_missing) > 0
+                     then float(v: r.present) / float(v: r.total)
+                     else 0.0
+  }))
+  // 乾淨欄位 + 排序
+  |> keep(columns: ["country","role","present","both_missing","lat_missing","lon_missing","total","present_ratio"])
+  |> sort(columns: ["present_ratio","present","total","country","role"], desc: true)
+  |> limit(n: 200)

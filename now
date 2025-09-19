@@ -1,0 +1,105 @@
+# ================= GEO 修補：正規化國名 + 回填經緯度（通用版） =================
+
+# 可選：補一些常見別名（不會覆蓋你原本的 ALIASES）
+ALIASES.update({
+    "U.S.A.": "United States",
+    "USA": "United States",
+    "UK": "United Kingdom",
+    "Hong Kong, SAR": "Hong Kong",
+    "Viet Nam": "Vietnam",
+    "Republic of Korea": "South Korea",
+    "Korea, Republic of": "South Korea",
+    "Russian Federation": "Russia",
+    "Taiwan, Province of China": "Taiwan",
+    "ROC": "Taiwan",
+    "TWN": "Taiwan",
+})
+
+def _norm(s):
+    if s is None:
+        return ""
+    # 去前後空白 & 壓縮中間多空白
+    return " ".join(str(s).strip().split())
+
+def _normalize_country(name: str) -> str:
+    n = _norm(name)
+    if not n:
+        return ""
+    # 先直接命中
+    if n in ALIASES:
+        return ALIASES[n]
+    # 再做大小寫無關比對
+    low = n.lower()
+    for k, v in ALIASES.items():
+        if low == str(k).lower():
+            return v
+    return n
+
+def _is_invalid_coord(v) -> bool:
+    """None/''/'nan'/'null'/非數字/0 都視為無效"""
+    if v is None:
+        return True
+    s = str(v).strip().lower()
+    if s in ("", "nan", "null"):
+        return True
+    try:
+        f = float(s)
+    except Exception:
+        return True
+    return f == 0.0
+
+def _first_non_empty(record: dict, keys: list[str]) -> tuple[str, str]:
+    """回傳 (key, value) 第一個有值的欄位；若都沒有，回 ('','')"""
+    for k in keys:
+        if k in record and str(record[k]).strip() != "":
+            return k, record[k]
+    return "", ""
+
+def _set_if_invalid(record: dict, key: str, value):
+    """目標欄位不存在或無效才寫入"""
+    if key not in record or _is_invalid_coord(record.get(key)):
+        record[key] = value
+
+def _fill_coords_for_side(record: dict, side: str):
+    """
+    side: 'src' 或 'dst'
+    會嘗試以下國名欄位（依序）：
+      src: ['src_country','attacker_geo_country_name','src_geo_country_name']
+      dst: ['dst_country','target_geo_country_name','dst_geo_country_name']
+    回填欄位主用：src_lat/src_lon 或 dst_lat/dst_lon
+    也會同步到常見別名欄位（若你環境有）
+    """
+    if side == "src":
+        country_keys = ["src_country", "attacker_geo_country_name", "src_geo_country_name"]
+        lat_keys = ["src_lat", "src_geo_lat", "src_geo_latitude"]
+        lon_keys = ["src_lon", "src_geo_lon", "src_geo_longitude"]
+    else:
+        country_keys = ["dst_country", "target_geo_country_name", "dst_geo_country_name"]
+        lat_keys = ["dst_lat", "dst_geo_lat", "dst_geo_latitude"]
+        lon_keys = ["dst_lon", "dst_geo_lon", "dst_geo_longitude"]
+
+    # 找國名
+    _, raw_country = _first_non_empty(record, country_keys)
+    country = _normalize_country(raw_country)
+    if not country:
+        return
+
+    # 在 BUILTIN_COUNTRIES 查座標（若沒定義就跳過，不強塞）
+    coords = BUILTIN_COUNTRIES.get(country)
+    if not coords or len(coords) != 2:
+        return
+
+    lat_val, lon_val = float(coords[0]), float(coords[1])
+
+    # 針對這個 side 的所有可能欄位，只要無效就回填
+    for lk in lat_keys:
+        _set_if_invalid(record, lk, lat_val)
+    for lk in lon_keys:
+        _set_if_invalid(record, lk, lon_val)
+
+def apply_geo_fixes(record: dict) -> dict:
+    """一次處理 src / dst；任何國家，只要在 BUILTIN_COUNTRIES 就回填"""
+    _fill_coords_for_side(record, "src")
+    _fill_coords_for_side(record, "dst")
+    return record
+# ============================= GEO 修補結束 =============================

@@ -16,7 +16,7 @@ import "influxdata/influxdb/schema"
 import "strings"
 import "math"
 
-// 固定台灣座標（中心點）
+// 固定台灣座標
 TW_LAT = 23.6978
 TW_LON = 120.9605
 
@@ -46,31 +46,31 @@ base
   }))
   |> keep(columns: ["_time","src_country","src_lat","src_lon","_cnt"])
 
-// (A) 用平均座標代表該來源國的位置（也可改 last）
+// (A) 代表座標：取最後一筆（建議；效能好）
 coords_by_country =
 src_present
   |> group(columns: ["src_country"])
-  |> mean(columns: ["src_lat","src_lon"])
+  |> last(column: "_time")
   |> keep(columns: ["src_country","src_lat","src_lon"])
 
-// (B) 算來源國 → 台灣的事件數
+// 來源國 → Taiwan 的事件數
 count_by_country =
 src_present
   |> group(columns: ["src_country"])
   |> sum(column: "_cnt")
   |> rename(columns: {_cnt: "edge_count"})
 
-// 合併座標 + 次數，並固定目的端為台灣
+// 合併 & 固定目的端為 Taiwan
 join(tables: {c: coords_by_country, n: count_by_country}, on: ["src_country"])
   |> map(fn: (r) => ({
       r with
       dst_country: "Taiwan",
       dst_lat: TW_LAT,
       dst_lon: TW_LON,
-      thickness: math.log(x: float(v: r.edge_count) + 1.0)  // 線寬參考值（可用）
+      thickness: math.log(x: float(v: r.edge_count) + 1.0)
   }))
   |> sort(columns: ["edge_count"], desc: true)
-  |> limit(n: 200) // 先畫 Top 200，避免太擠；需要可調大
+  |> limit(n: 200)
 
 
 

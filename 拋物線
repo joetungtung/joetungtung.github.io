@@ -8,6 +8,10 @@ src_country：來源國名
 src_lat/src_lon：取該國來源點的平均座標（或最後一筆）
 dst_country/dst_lat/dst_lon：固定為 Taiwan
 edge_count：該來源國 → 台灣的事件數（用來做線條粗細）
+
+
+
+
 import "influxdata/influxdb/schema"
 import "strings"
 import "math"
@@ -67,11 +71,15 @@ join(tables: {c: coords_by_country, n: count_by_country}, on: ["src_country"])
   }))
   |> sort(columns: ["edge_count"], desc: true)
   |> limit(n: 200) // 先畫 Top 200，避免太擠；需要可調大
+
+
+
 ② 逐事件版：每筆一條線（慎用）
 效果：
 每筆 present 事件都會畫一條線到台灣
 可在 GeoMap 啟用動畫，看起來很有感
 記得 limit，不然資料量大會卡
+
 import "influxdata/influxdb/schema"
 import "strings"
 
@@ -103,6 +111,9 @@ from(bucket: "SOC")
   |> keep(columns: ["_time","src_country","dst_country","src_lat","src_lon","dst_lat","dst_lon","edge_count"])
   |> sort(columns: ["_time"], desc: true)
   |> limit(n: 2000)  // 視資料量調整
+
+
+
 Grafana GeoMap 設定（Tracks Layer）
 Visualization：GeoMap
 Layer：新增 Tracks
@@ -119,24 +130,28 @@ Show arrows：On
 Color：By value 或固定色
 Tooltip：勾選 src_country, dst_country, edge_count
 Time range：先用 12h / 24h；若線太多，請用 sort + limit 控制
+
+
+
+
 可選的篩選/優化
 只看國外 → 台灣（排除台灣作為來源端）
 在 src_present 後加：
+
 |> filter(fn: (r) => r.src_country != "Taiwan")
+
+
 想把「同一來源國」線條更粗更有差異：
 已在彙總版提供 thickness = log(edge_count+1)，Tracks → Thickness 指到 thickness。
 若你有 src ASN / city 等欄位，也可把代表座標從 mean 改成 last()，讓線段更貼近實際點位：
+
+
 // 用最後一筆座標
 coords_by_country =
   src_present
     |> group(columns: ["src_country"])
     |> last(column: "_time")
     |> keep(columns: ["src_country","src_lat","src_lon"])
+
+
 如果你想要同時畫「Top 10 來源國」+「其他國家合併為 Others」也可以，我再幫你加一段折疊邏輯；先把這兩個版本跑起來，你看想要哪種呈現（乾淨或更細）。
-
-
-附加
-
-搜尋
-
-學習

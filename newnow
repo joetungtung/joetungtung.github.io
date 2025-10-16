@@ -1,7 +1,5 @@
-from exchangelib import EWSTimeZone, EWSDateTime
+# 用 Python 的 aware datetime，然後轉成 EWSDateTime
+since_py = datetime.now(timezone.utc) - timedelta(days=LOOKBACK_DAYS)
+since    = EWSDateTime.from_datetime(since_py)
 
-# 建立 Exchange 可接受的 UTC 時區
-UTC_TZ = EWSTimeZone.timezone('UTC')
-
-since = EWSDateTime.now(tz=UTC_TZ) - timedelta(days=LOOKBACK_DAYS)
 qs = folder.filter(datetime_received__gte=since).order_by("-datetime_received")

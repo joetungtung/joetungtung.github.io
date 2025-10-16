@@ -1,19 +1,66 @@
-def resolve_folder_by_path(account, subfolder_name: str):
+def _unique_path(base_dir: Path, prefix: str, filename: str) -> Path:
     """
-    只從 Inbox (收件匣) 底下取子資料夾。
-    不分大小寫比對，避免中文/英文介面差異。
+    在 base_dir 內產生不重名的路徑：
+    例如 prefix='20251017_174507', filename='foo.csv'
+    回傳 downloads/<source>/20251017_174507_foo.csv
+    若已存在，依序加 _1, _2...
     """
-    # 先嘗試直接取：account.inbox / 'Radware'
-    try:
-        return account.inbox / subfolder_name
-    except Exception:
-        # 若名稱大小寫或語系不同，做一層不分大小寫比對
-        target = subfolder_name.lower()
-        for f in account.inbox.children.all():
-            try:
-                if f.name and f.name.lower() == target:
-                    return f
-            except AttributeError:
-                # 防止遇到非 Folder 物件（例如 MeetingRequest）
+    stem = f"{prefix}_{filename}"
+    p = base_dir / stem
+    i = 1
+    while p.exists():
+        p = base_dir / f"{prefix}_{i}_{filename}"
+        i += 1
+    return p
+
+def fetch_folder(account: Account, source_key: str, folder_path: str, processed_set: set) -> int:
+    """
+    從指定資料夾抓 CSV 附件，存到 downloads/<source>/（不再建日期子夾）
+    並將有成功下載附件的郵件設為已讀。
+    回傳下載的附件數。
+    """
+    folder = resolve_folder_by_path(account, folder_path)
+    since  = datetime.now(timezone.utc) - timedelta(days=LOOKBACK_DAYS)
+    qs = folder.filter(datetime_received__gte=since).order_by("-datetime_received")
+
+    saved = 0
+    out_base = DOWNLOAD_ROOT / source_key
+    ensure_dir(out_base)
+
+    for item in qs.only("message_id", "datetime_received", "subject", "attachments")[:PAGE_LIMIT]:
+        if not isinstance(item, Message):
+            continue
+        mid = item.message_id
+        if mid in processed_set:
+            continue
+
+        got_any = False
+
+        recv_prefix = item.datetime_received.astimezone(timezone.utc).strftime("%Y%m%d_%H%M%S")
+
+        for att in (item.attachments or []):
+            if not isinstance(att, FileAttachment):
                 continue
-        raise ValueError(f"Inbox 下找不到子資料夾：{subfolder_name}")
+            if ONLY_CSV and not (att.name and att.name.lower().endswith(".csv")):
+                continue
+
+            # 平面目錄：downloads/<source>/yyyyMMdd_HHmmss_檔名.csv（避免覆蓋）
+            out_path = _unique_path(out_base, recv_prefix, att.name)
+            with open(out_path, "wb") as f:
+                f.write(att.content)
+            print(f"[{source_key}] saved: {out_path}")
+            saved += 1
+            got_any = True
+
+        # 只有成功抓到至少 1 個 CSV 才設已讀
+        if got_any:
+            try:
+                item.is_read = True
+                item.save(update_fields=["is_read"])
+            except Exception as e:
+                print(f"[WARN] set read failed: {e}")
+
+        # 無論有沒有附件，都標記這封信為已處理，避免下次重複掃
+        processed_set.add(mid)
+
+    return saved

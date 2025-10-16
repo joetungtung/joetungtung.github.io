@@ -1,5 +1,5 @@
-# 用 Python 的 aware datetime，然後轉成 EWSDateTime
+# 抓近幾天信件的時間範圍（用 EWSDateTime）
 since_py = datetime.now(timezone.utc) - timedelta(days=LOOKBACK_DAYS)
-since    = EWSDateTime.from_datetime(since_py)
+since = EWSDateTime.from_datetime(since_py)  # 這行會自動轉成 EWS 時間格式
 
 qs = folder.filter(datetime_received__gte=since).order_by("-datetime_received")

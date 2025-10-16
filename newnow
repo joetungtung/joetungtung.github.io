@@ -1,44 +1,19 @@
-def resolve_folder_by_path(account: Account, path_str: str):
+def resolve_folder_by_path(account, subfolder_name: str):
     """
-    支援三種寫法：
-      - "Inbox/Radware"
-      - "收件匣/Radware" 或 "收件箱/Radware"
-      - "Radware"   ← 視為在 Inbox 底下
-    找不到會丟出 ValueError 並列出 Inbox 的子資料夾名稱，方便你核對。
+    只從 Inbox (收件匣) 底下取子資料夾。
+    不分大小寫比對，避免中文/英文介面差異。
     """
-    # 正規化
-    path_str = (path_str or "").strip().strip("/")
-
-    # 入口：先定位到 Inbox
-    inbox = account.inbox
-
-    # 如果只給子資料夾名，直接從 Inbox 底下找
-    if "/" not in path_str:
-        candidates = [path_str]
-    else:
-        first, *rest = path_str.split("/")
-        first_lower = first.lower()
-        # 容忍不同語系的「收件匣」
-        if first_lower in ("inbox", "收件匣", "收件箱"):
-            candidates = rest
-        else:
-            # 若第一段不是 Inbox/收件匣，一律當成在 Inbox 底下
-            candidates = [first] + rest
-
-    # 逐層往下找
-    node = inbox
-    for seg in candidates:
-        # 在該層列出所有子資料夾名稱，做名稱比對（不分大小寫）
-        sub_names = {f.name: f for f in node.children.all()}
-        match = None
-        for name, f in sub_names.items():
-            if name.lower() == seg.lower():
-                match = f
-                break
-        if not match:
-            # 列出目前層級有哪些子資料夾，幫你對照
-            available = ", ".join(sorted(sub_names.keys()))
-            raise ValueError(f"No subfolder with name '{seg}'. Available under '{node.name}': {available}")
-        node = match
-
-    return node
+    # 先嘗試直接取：account.inbox / 'Radware'
+    try:
+        return account.inbox / subfolder_name
+    except Exception:
+        # 若名稱大小寫或語系不同，做一層不分大小寫比對
+        target = subfolder_name.lower()
+        for f in account.inbox.children.all():
+            try:
+                if f.name and f.name.lower() == target:
+                    return f
+            except AttributeError:
+                # 防止遇到非 Folder 物件（例如 MeetingRequest）
+                continue
+        raise ValueError(f"Inbox 下找不到子資料夾：{subfolder_name}")

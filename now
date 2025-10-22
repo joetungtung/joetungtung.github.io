@@ -1,1 +1,2 @@
-D:\Joe\Develop\GrafanaInfluxdb\Autoimport\Arcsight_Ingest.py:109: UserWarning: Could not infer format, so each element will be parsed individually, falling back to `dateutil`. To ensure parsing is consistent and as-expected, please specify a format.
+from influxdb_client.client.write_api import SYNCHRONOUS
+w = cli.write_api(write_options=SYNCHRONOUS)

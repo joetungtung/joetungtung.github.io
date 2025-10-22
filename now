@@ -1,23 +1,45 @@
-from influxdb_client.client.write_api import SYNCHRONOUS
-w = cli.write_api(write_options=SYNCHRONOUS)
+def write_to_influx(df: pd.DataFrame) -> bool:
+    if df.empty:
+        print("[INFO] nothing to write.")
+        return True
+    try:
+        # ====== A) 只留安全欄位（數值欄位 + tags + event_ts）======
+        safe_numeric_fields = ["bytes_in", "bytes_out", "src_port", "dst_port", "flex_num1", "count"]
+        keep_cols = (["event_ts"]
+                     + [c for c in TAG_COLS if c in df.columns]
+                     + [c for c in safe_numeric_fields if c in df.columns])
 
+        # 丟掉其它欄位（特別是 src_ip/dst_ip/message/url/... 這些高風險字串欄位）
+        df = df.loc[:, [c for c in keep_cols if c in df.columns]].copy()
 
+        # 數值欄位收斂成數值；全空的列移除（Influx 需要至少一個 field 有值）
+        for c in safe_numeric_fields:
+            if c in df.columns:
+                df[c] = pd.to_numeric(df[c], errors="coerce")
+        if any(c in df.columns for c in safe_numeric_fields):
+            df = df.dropna(subset=[c for c in safe_numeric_fields if c in df.columns], how="all")
 
-# === 先用「安全子集」寫入，確保能進庫 ===
-safe_numeric_fields = [
-    "bytes_in", "bytes_out", "src_port", "dst_port", "flex_num1", "count"
-]
-keep_cols = ["event_ts"] + [c for c in TAG_COLS if c in df.columns] + [c for c in safe_numeric_fields if c in df.columns]
-df = df.loc[:, [c for c in keep_cols if c in df.columns]].copy()
+        # ====== B) Influx 不吃 pd.NA，與 dtype 再淨化 ======
+        df = _sanitize_for_influx(df)  # 你原本的
+        # （可選）若你有 _sanitize_string_cols，就在這裡再跑一次以跳脫引號/換行
 
-# 型別再次收斂：數值就轉數值，其他轉字串或丟掉
-for c in df.columns:
-    if c in ("event_ts",) or c in TAG_COLS:
-        continue
-    if c in safe_numeric_fields:
-        df[c] = pd.to_numeric(df[c], errors="coerce")
-# 只留下至少一個數值欄位有值的列（避免全 NaN）
-if not any(col in df.columns for col in safe_numeric_fields):
-    print("[WARN] no numeric fields present to write")
-else:
-    df = df.dropna(subset=[c for c in safe_numeric_fields if c in df.columns], how="all")
+        # （可選）除錯看看最後真的只剩哪些欄位
+        print("[DEBUG] writing columns:", list(df.columns))
+
+        with InfluxDBClient(url=INFLUX_URL, org=ORG, token=TOKEN, timeout=120_000) as cli:
+            # 同步最穩；若你仍用批次，記得最後 flush/close
+            w = cli.write_api(write_options=SYNCHRONOUS)
+            w.write(
+                bucket=BUCKET,
+                org=ORG,
+                record=df,
+                data_frame_measurement_name=MEAS,
+                data_frame_tag_columns=[c for c in TAG_COLS if c in df.columns],
+                data_frame_timestamp_column="event_ts",
+            )
+
+        print(f"[OK] wrote {len(df)} rows to {BUCKET}/{MEAS}")
+        return True
+    except Exception as e:
+        print(f"[ERROR] write influx failed: {e}")
+        return False

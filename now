@@ -1,2 +1,23 @@
 from influxdb_client.client.write_api import SYNCHRONOUS
 w = cli.write_api(write_options=SYNCHRONOUS)
+
+
+
+# === 先用「安全子集」寫入，確保能進庫 ===
+safe_numeric_fields = [
+    "bytes_in", "bytes_out", "src_port", "dst_port", "flex_num1", "count"
+]
+keep_cols = ["event_ts"] + [c for c in TAG_COLS if c in df.columns] + [c for c in safe_numeric_fields if c in df.columns]
+df = df.loc[:, [c for c in keep_cols if c in df.columns]].copy()
+
+# 型別再次收斂：數值就轉數值，其他轉字串或丟掉
+for c in df.columns:
+    if c in ("event_ts",) or c in TAG_COLS:
+        continue
+    if c in safe_numeric_fields:
+        df[c] = pd.to_numeric(df[c], errors="coerce")
+# 只留下至少一個數值欄位有值的列（避免全 NaN）
+if not any(col in df.columns for col in safe_numeric_fields):
+    print("[WARN] no numeric fields present to write")
+else:
+    df = df.dropna(subset=[c for c in safe_numeric_fields if c in df.columns], how="all")

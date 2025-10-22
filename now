@@ -1,3 +1,39 @@
-[ERROR] write influx failed: (400)
-Reason: Bad Request
-HTTP response headers: HTTPHeaderDict({'Content-Type': 'application/json; charset=utf-8', 'X-Influxdb-Build': 'OSS', 'X-Influxdb-Version': 'v2.7.12', 'X-Platform-Error-Code': 'invalid', 'Date': 'Wed, 22 Oct 2025 22:51:27 GMT', 'Transfer-Encoding': 'chunked'})
+import logging
+logging.basicConfig(level=logging.INFO)
+logging.getLogger("influxdb_client.client.write").setLevel(logging.DEBUG)
+logging.getLogger("urllib3").setLevel(logging.WARNING)
+
+
+
+def smoke_test_influx():
+    from influxdb_client import InfluxDBClient
+    from influxdb_client.client.write_api import SYNCHRONOUS
+    import pandas as pd
+    from datetime import datetime, timezone
+
+    test = pd.DataFrame([{
+        "event_ts": pd.Timestamp(datetime.now(timezone.utc)),
+        "product": "smoke",
+        "count": 1
+    }])
+    try:
+        with InfluxDBClient(url=INFLUX_URL, org=ORG, token=TOKEN, timeout=60000) as cli:
+            w = cli.write_api(write_options=SYNCHRONOUS)
+            w.write(
+                bucket=BUCKET, org=ORG, record=test,
+                data_frame_measurement_name=MEAS,
+                data_frame_tag_columns=["product"],
+                data_frame_timestamp_column="event_ts",
+            )
+        print("[SMOKE] OK: single row written")
+    except Exception as e:
+        import traceback; traceback.print_exc()
+        print("[SMOKE] FAIL:", e)
+
+# 先只跑煙囪測試（要測完整流程時把下一行註解掉）
+# smoke_test_influx();  import sys; sys.exit(0)
+
+
+
+
+

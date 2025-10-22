@@ -1,2 +1,1 @@
-D:\Joe\Develop\GrafanaInfluxdb\Autoimport\Arcsight_Ingest.py:127: FutureWarning: Downcasting object dtype arrays on .fillna, .ffill, .bfill is deprecated and will change in a future version. Call result.infer_objects(copy=False) instead. To opt-in to the future behavior, set `pd.set_option('future.no_silent_downcasting', True)`
-  df["count"] = df["count"].fillna(1).astype("Int64")
+[ERROR] write influx failed: boolean value of NA is ambiguous

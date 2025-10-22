@@ -1,6 +1,4 @@
-def to_ts(s: pd.Series) -> pd.Series:
-    # 嘗試用標準格式一次轉換；若失敗再 fallback
-    try:
-        return pd.to_datetime(s, format="%Y-%m-%d %H:%M:%S", errors="coerce", utc=True)
-    except Exception:
-        return pd.to_datetime(s, errors="coerce", utc=True)
+[DEBUG] df shape: (2614918, 32)
+[DEBUG] event_ts range: 2025-10-17 05:21:42+00:00 → 2025-10-23 05:31:23+00:00
+[DEBUG] bucket/org/meas: SOC LINE BANK SOC arcsight_event
+[DEBUG] effective TAG_COLS: ['product', 'device_action', 'severity', 'attacker_geo_country_name', 'target_geo_country_name', 'protocol', 'app_protocol', 'rule_name', 'device_vendor', 'device_name', 'agent_type', 'agent_name', 'device_in_if', 'device_out_if']

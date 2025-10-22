@@ -1,1 +1,5 @@
+df["count"] = df["count"].fillna(1).infer_objects(copy=False).astype("Int64")
+
+
+
 [ERROR] write influx failed: boolean value of NA is ambiguous

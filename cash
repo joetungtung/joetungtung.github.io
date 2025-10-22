@@ -1,1 +1,30 @@
-[ERROR] write influx failed: HTTPConnectionPool(host='127.0.0.1', port=8086): Read timed out. (read timeout=9.80721839999751)
+from influxdb_client.client.write_api import WriteOptions
+
+def write_to_influx(df: pd.DataFrame) -> bool:
+    if df.empty:
+        print("[INFO] nothing to write.")
+        return True
+    try:
+        df["event_ts"] = pd.to_datetime(df["event_ts"], errors="coerce", utc=True)
+        df = df[~df["event_ts"].isna()].copy()
+        df = _sanitize_for_influx(df)
+        tag_cols_effective = [c for c in TAG_COLS if c in df.columns]
+
+        # 🚀 延長 timeout，並開分批寫入（每 10,000 筆）
+        with InfluxDBClient(url=INFLUX_URL, org=ORG, token=TOKEN, timeout=120_000) as cli:
+            wopt = WriteOptions(batch_size=10_000, flush_interval=5_000)
+            w = cli.write_api(write_options=wopt)
+            w.write(
+                bucket=BUCKET,
+                org=ORG,
+                record=df,
+                data_frame_measurement_name=MEAS,
+                data_frame_tag_columns=tag_cols_effective,
+                data_frame_timestamp_column="event_ts",
+            )
+
+        print(f"[OK] wrote {len(df)} rows to {BUCKET}/{MEAS}")
+        return True
+    except Exception as e:
+        print(f"[ERROR] write influx failed: {e}")
+        return False

@@ -1,2 +1,6 @@
-D:\Joe\Develop\GrafanaInfluxdb\Autoimport\Arcsight_Ingest.py:106: UserWarning: Could not infer format, so each element will be parsed individually, falling back to `dateutil`. To ensure parsing is consistent and as-expected, please specify a format.
-  return pd.to_datetime(s, errors="coerce", utc=True)
+def to_ts(s: pd.Series) -> pd.Series:
+    # 嘗試用標準格式一次轉換；若失敗再 fallback
+    try:
+        return pd.to_datetime(s, format="%Y-%m-%d %H:%M:%S", errors="coerce", utc=True)
+    except Exception:
+        return pd.to_datetime(s, errors="coerce", utc=True)

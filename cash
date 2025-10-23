@@ -1,27 +1,29 @@
 from(bucket: "SOC")
-  |> range(start: 0)                           // 全時間，避免被面板時間範圍卡住
+  |> range(start: 0, stop: time(v: "2100-01-01T00:00:00Z"))
   |> filter(fn: (r) => r._measurement == "arcsight_event")
   |> limit(n: 1)
-  |> yield(name: "any_one_point")
+  |> yield(name: "any_one_point_including_future")
 
 
 
 
-from(bucket: "SOC")
-  |> range(start: 0)
-  |> filter(fn: (r) => r._measurement == "arcsight_event")
+m = "arcsight_event"
+
+d = from(bucket: "SOC")
+  |> range(start: -50y, stop: time(v: "2100-01-01T00:00:00Z"))
+  |> filter(fn: (r) => r._measurement == m)
   |> keep(columns: ["_time"])
-  |> sort(columns: ["_time"], desc: true)
-  |> limit(n: 1)
-  |> yield(name: "latest_time")
+  |> group()
 
+d |> sort(columns: ["_time"], desc: false) |> limit(n: 1) |> yield(name: "earliest_time")
+d |> sort(columns: ["_time"], desc: true)  |> limit(n: 1) |> yield(name: "latest_time")
 
 
 
 
 from(bucket: "SOC")
-  |> range(start: 0)
+  |> range(start: -50y, stop: time(v: "2100-01-01T00:00:00Z"))
   |> filter(fn: (r) => r._measurement == "arcsight_event")
   |> keep(columns: ["_time"])
   |> count()
-  |> yield(name: "row_count_all")
+  |> yield(name: "row_count_all_time")

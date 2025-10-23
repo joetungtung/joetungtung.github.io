@@ -1,3 +1,9 @@
+print(f"[DEBUG][sample time] file={path.name}, head={tcol.head(3).tolist()}")
+
+
+
+
+
 _EPOCH_RE = re.compile(r"^\d{9,}$")  # 9位以上純數字 → 視為 epoch
 
 def _epoch_to_utc_ts(v: float) -> Optional[pd.Timestamp]:

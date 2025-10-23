@@ -9,27 +9,30 @@ from(bucket: "SOC")
 
 
 
-latest = from(bucket: "SOC")
-  |> range(start: -50y, stop: time(v: "2100-01-01T00:00:00Z"))
-  |> filter(fn: (r) => r._measurement == "arcsight_event")
-  |> sort(columns: ["_time"], desc: true)
-  |> limit(n: 1)
+latest =
+  from(bucket: "SOC")
+    |> range(start: -50y, stop: time(v: "2100-01-01T00:00:00Z"))
+    |> filter(fn: (r) => r._measurement == "arcsight_event")
+    |> sort(columns: ["_time"], desc: true)
+    |> limit(n: 1)
 
-// delta_sec > 0 代表「現在比資料時間晚」；delta_sec < 0 代表「資料在未來」
+// delta_sec > 0 代表資料在「過去」；delta_sec < 0 代表資料在「未來」
 latest
   |> map(fn: (r) => ({
-      r with
-      delta_sec: int(
-        v: float(v: (uint(v: now()) - uint(v: r._time))) / 1e9
-      )
-    }))
+        r with
+        delta_sec: int(
+          v: (
+            float(v: uint(v: now())) - float(v: uint(v: r._time))
+          ) / 1000000000.0
+        )
+      }))
   |> yield(name: "now_minus_time_sec")
 
 
 from(bucket: "SOC")
   |> range(start: -50y, stop: time(v: "2100-01-01T00:00:00Z"))
   |> filter(fn: (r) => r._measurement == "arcsight_event")
-  |> filter(fn: (r) => r._time > now())   // 直接過濾出未來時間的資料
+  |> filter(fn: (r) => r._time > now())   // 抓到就表示寫到未來
   |> sort(columns: ["_time"], desc: false)
   |> limit(n: 20)
   |> yield(name: "points_in_future")

@@ -1,2 +1,5 @@
-invalid: error @12:60-12:61: expected float but found int error @12:61-12:63: undefined identifier e9 error @12:12-12:63: invalid binary operator <INVALID_OP>
-
+Traceback (most recent call last):
+  File "D:\Joe\Develop\GrafanaInfluxdb\Autoimport\Arcsight_Ingest.py", line 113, in <module>
+    def _epoch_to_utc_ts(v: float) -> pd.Timestamp | pd.NaT:
+                                      ~~~~~~~~~~~~~^~~~~~~~
+TypeError: unsupported operand type(s) for |: 'type' and 'NaTType'

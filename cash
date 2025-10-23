@@ -1,50 +1,10 @@
-raw.columns = (
-    raw.columns
-       .astype(str)
-       .str.replace("\ufeff", "", regex=False)  # 去掉 BOM
-       .str.strip()                             # 去頭尾空白
-)
+for c in safe_numeric_fields:
+    if c in df.columns:
+        df[c] = pd.to_numeric(df[c], errors="coerce")
 
-
-
-
-def to_ts(s: pd.Series) -> pd.Series:
-    # 先做一點常見清理
-    ss = s.astype(str).str.strip()
-
-    # 1) 先嘗試最常見的 ISO/空白分隔
-    ts = pd.to_datetime(ss, errors="coerce", utc=True)
-
-    if ts.notna().any():
-        return ts
-
-    # 2) 嘗試把 / 換成 -（很多報表是 10/23/2025 05:40:00 AM）
-    ss2 = ss.str.replace("/", "-", regex=False)
-    ts = pd.to_datetime(ss2, errors="coerce", utc=True)
-    if ts.notna().any():
-        return ts
-
-    # 3) 再試一次 dayfirst（若來源是 DD-MM-YYYY）
-    ts = pd.to_datetime(ss2, errors="coerce", utc=True, dayfirst=True)
-    if ts.notna().any():
-        return ts
-
-    # 4) 最後才讓 dateutil 逐筆吃（慢，但能救回混雜格式）
-    return pd.to_datetime(ss, errors="coerce", utc=True)
-
-
-
-
-
-
-# 時間
-tcol = pick(raw, COLMAP_TIME)
-if tcol is not None:
-    df["event_ts"] = to_ts(tcol)
-    ok = int(df["event_ts"].notna().sum())
-    bad = int(df["event_ts"].isna().sum())
-    print(f"[DEBUG][time] file='{path.name}' source='{tcol.name}' parsed_ok={ok} missing={bad}")
-else:
-    # 沒有時間欄就用檔案 mtime 避免整批丟失
-    df["event_ts"] = pd.to_datetime(datetime.fromtimestamp(path.stat().st_mtime), utc=True)
-    print(f"[DEBUG][time] file='{path.name}' source='mtime' parsed_ok={len(df)} missing=0")
+# --- 保證至少有一個 field 可寫 ---
+if not any(c in df.columns for c in safe_numeric_fields):
+    df["count"] = 1.0
+elif df[safe_numeric_fields].isna().all(axis=1).any():
+    # 全空的列也給個 count=1
+    df.loc[df[safe_numeric_fields].isna().all(axis=1), "count"] = 1.0

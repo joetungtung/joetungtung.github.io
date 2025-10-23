@@ -1,0 +1,45 @@
+D:\Joe\Develop\GrafanaInfluxdb\Autoimport>python Arcsight_Ingest.py
+[INFO] no csvs for source 'radware' in downloads\Radware
+[INFO] === fw === files=10 dir=downloads\FW
+[DEBUG][time] file='[SOC][FW] last 5m Event_10-23-25 8-18-07 AM.csv' source='End Time' parsed_ok=10000 missing=0
+[PARSE] fw: [SOC][FW] last 5m Event_10-23-25 8-18-07 AM.csv -> 10000 rows
+[OK] wrote chunk 1/1 rows=10000
+[OK] wrote total 10000 rows to SOC/arcsight_event
+[DEBUG][time] file='[SOC][FW] last 5m Event_10-23-25 8-23-07 AM.csv' source='End Time' parsed_ok=10000 missing=0
+[PARSE] fw: [SOC][FW] last 5m Event_10-23-25 8-23-07 AM.csv -> 10000 rows
+[OK] wrote chunk 1/1 rows=10000
+[OK] wrote total 10000 rows to SOC/arcsight_event
+[DEBUG][time] file='[SOC][FW] last 5m Event_10-23-25 8-28-07 AM.csv' source='End Time' parsed_ok=10000 missing=0
+[PARSE] fw: [SOC][FW] last 5m Event_10-23-25 8-28-07 AM.csv -> 10000 rows
+[OK] wrote chunk 1/1 rows=10000
+[OK] wrote total 10000 rows to SOC/arcsight_event
+[DEBUG][time] file='[SOC][FW] last 5m Event_10-23-25 8-33-07 AM.csv' source='End Time' parsed_ok=10000 missing=0
+[PARSE] fw: [SOC][FW] last 5m Event_10-23-25 8-33-07 AM.csv -> 10000 rows
+[OK] wrote chunk 1/1 rows=10000
+[OK] wrote total 10000 rows to SOC/arcsight_event
+[DEBUG][time] file='[SOC][FW] last 5m Event_10-23-25 8-38-07 AM.csv' source='End Time' parsed_ok=10000 missing=0
+[PARSE] fw: [SOC][FW] last 5m Event_10-23-25 8-38-07 AM.csv -> 10000 rows
+[OK] wrote chunk 1/1 rows=10000
+[OK] wrote total 10000 rows to SOC/arcsight_event
+[DEBUG][time] file='[SOC][FW] last 5m Event_10-23-25 8-43-07 AM.csv' source='End Time' parsed_ok=10000 missing=0
+[PARSE] fw: [SOC][FW] last 5m Event_10-23-25 8-43-07 AM.csv -> 10000 rows
+[OK] wrote chunk 1/1 rows=10000
+[OK] wrote total 10000 rows to SOC/arcsight_event
+[DEBUG][time] file='[SOC][FW] last 5m Event_10-23-25 8-48-07 AM.csv' source='End Time' parsed_ok=10000 missing=0
+[PARSE] fw: [SOC][FW] last 5m Event_10-23-25 8-48-07 AM.csv -> 10000 rows
+[OK] wrote chunk 1/1 rows=10000
+[OK] wrote total 10000 rows to SOC/arcsight_event
+[DEBUG][time] file='[SOC][FW] last 5m Event_10-23-25 8-53-07 AM.csv' source='End Time' parsed_ok=10000 missing=0
+[PARSE] fw: [SOC][FW] last 5m Event_10-23-25 8-53-07 AM.csv -> 10000 rows
+[OK] wrote chunk 1/1 rows=10000
+[OK] wrote total 10000 rows to SOC/arcsight_event
+[DEBUG][time] file='[SOC][FW] last 5m Event_10-23-25 8-58-07 AM.csv' source='End Time' parsed_ok=10000 missing=0
+[PARSE] fw: [SOC][FW] last 5m Event_10-23-25 8-58-07 AM.csv -> 10000 rows
+[OK] wrote chunk 1/1 rows=10000
+[OK] wrote total 10000 rows to SOC/arcsight_event
+[DEBUG][time] file='[SOC][FW] last 5m Event_10-23-25 9-03-07 AM.csv' source='End Time' parsed_ok=10000 missing=0
+[PARSE] fw: [SOC][FW] last 5m Event_10-23-25 9-03-07 AM.csv -> 10000 rows
+[OK] wrote chunk 1/1 rows=10000
+[OK] wrote total 10000 rows to SOC/arcsight_event
+[INFO] no csvs for source 'waf' in downloads\WAF
+[SUMMARY] files=10, rows_written~=100000

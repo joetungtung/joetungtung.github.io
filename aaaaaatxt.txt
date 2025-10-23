@@ -1,43 +1,35 @@
 import "strings"
 
-src_key = "RADWARE"  // 只抓 Radware 來源
+src_key = "RADWARE"
 
-base =
-  from(bucket: "SOC")
-    |> range(start: v.timeRangeStart, stop: v.timeRangeStop)
-    |> filter(fn: (r) => r._measurement == "arcsight_event")
-    // 事件量欄位：若你的資料確實有 "count" 就用這行
-    |> filter(fn: (r) => r._field == "count")
-    // 寬鬆判斷來源屬於 Radware（避免實際欄位命名不一致）
-    |> filter(fn: (r) =>
-      (exists r.device_name   and strings.containsStr(v: strings.toUpper(v: r.device_name),   substr: src_key)) or
-      (exists r["Agent Name"] and strings.containsStr(v: strings.toUpper(v: r["Agent Name"]), substr: src_key)) or
-      (exists r.product       and strings.containsStr(v: strings.toUpper(v: r.product),       substr: src_key)) or
-      (exists r.device_vendor and strings.containsStr(v: strings.toUpper(v: r.device_vendor), substr: src_key))
-    )
-    // 正規化來源 IP 欄位：嘗試常見命名，取到就統一命名為 src_ip
-    |> map(fn: (r) => ({
-        r with src_ip:
-          if exists r.src_ip then r.src_ip
-          else if exists r["Source IP"] then r["Source IP"]
-          else if exists r["Source Address"] then r["Source Address"]
-          else if exists r.source_ip then r.source_ip
-          else if exists r.source_address then r.source_address
-          else if exists r.source then r.source
-          else ""
-      }))
-    |> filter(fn: (r) => r.src_ip != "")
-    |> map(fn: (r) => ({ r with _value: float(v: r._value) }))
-
-// 匯總整個時間區間，依 src_ip 合併、加總事件量
-base
-  |> aggregateWindow(every: inf, fn: sum, createEmpty: false)
+from(bucket: "SOC")
+  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)
+  |> filter(fn: (r) => r._measurement == "arcsight_event")
+  |> filter(fn: (r) => r._field == "count")
+  |> filter(fn: (r) =>
+    (exists r.device_name   and strings.containsStr(v: strings.toUpper(v: r.device_name),   substr: src_key)) or
+    (exists r["Agent Name"] and strings.containsStr(v: strings.toUpper(v: r["Agent Name"]), substr: src_key)) or
+    (exists r.product       and strings.containsStr(v: strings.toUpper(v: r.product),       substr: src_key)) or
+    (exists r.device_vendor and strings.containsStr(v: strings.toUpper(v: r.device_vendor), substr: src_key))
+  )
+  |> map(fn: (r) => ({
+      r with src_ip:
+        if exists r.src_ip then r.src_ip
+        else if exists r["Source IP"] then r["Source IP"]
+        else if exists r["Source Address"] then r["Source Address"]
+        else if exists r.source_ip then r.source_ip
+        else if exists r.source_address then r.source_address
+        else if exists r.source then r.source
+        else ""
+    }))
+  |> filter(fn: (r) => r.src_ip != "")
   |> group(columns: ["src_ip"])
   |> sum(column: "_value")
   |> rename(columns: {_value: "events"})
   |> sort(columns: ["events"], desc: true)
   |> limit(n: 10)
   |> keep(columns: ["src_ip", "events"])
+
 
 
 
@@ -76,3 +68,4 @@ from(bucket: "SOC")
   |> sort(columns: ["events"], desc: true)
   |> limit(n: 10)
   |> keep(columns: ["src_ip", "events"])
+

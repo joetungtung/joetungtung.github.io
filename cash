@@ -1,10 +1,12 @@
-# --- 統一可疑欄位為字串，避免 invalid boolean 問題 ---
-force_string_fields = [
-    "device_action", "severity", "rule_name",
-    "agent_type", "agent_name",
-    "protocol", "app_protocol",
-]
-for c in force_string_fields:
-    if c in df.columns:
-        df[c] = df[c].astype(str)
+def fix_influx_type_conflicts(df: pd.DataFrame):
+    for col in df.columns:
+        if df[col].dtype == object:  # 文字欄位
+            # 針對 "passed", "blocked" 等關鍵字避免被當成 boolean
+            df[col] = df[col].astype(str)
+        elif df[col].dtype == bool:
+            # Boolean 轉成字串 "true"/"false"
+            df[col] = df[col].apply(lambda x: "true" if x else "false")
+    return df
 
+
+df = fix_influx_type_conflicts(df)

@@ -1,12 +1,14 @@
-import "influxdata/influxdb/schema"
-
 m = "arcsight_event"
 
-schema.fieldKeys(bucket: "SOC", predicate: (r) => r._measurement == m)
-  |> yield(name: "fieldKeys")   // 這裡才會出現可畫圖的數值欄位（bytes_in/bytes_out/count...）
+d = from(bucket: "SOC")
+  |> range(start: 0)                      // 全時間
+  |> filter(fn: (r) => r._measurement == m)
+  |> keep(columns: ["_time"])
+  |> group()
 
-schema.tagKeys(bucket: "SOC", predicate: (r) => r._measurement == m)
-  |> yield(name: "tagKeys")     // 這裡是你截圖那些字串維度（device_name/rule_name/...）
+d |> first() |> yield(name: "first_point_time")
+d |> last()  |> yield(name: "last_point_time")
+d |> count() |> yield(name: "row_count_all")
 
 
 
@@ -15,22 +17,36 @@ schema.tagKeys(bucket: "SOC", predicate: (r) => r._measurement == m)
 m = "arcsight_event"
 
 from(bucket: "SOC")
-  |> range(start: -90d)
+  |> range(start: 0)
   |> filter(fn: (r) => r._measurement == m)
-  |> limit(n: 20)
-  |> yield(name: "peek_any")
+  |> sort(columns: ["_time"], desc: true)
+  |> limit(n: 50)
+  |> yield(name: "latest_50")
 
 
 
 m = "arcsight_event"
-f = "count"  // 或 bytes_in/bytes_out
+
+from(bucket: "SOC")
+  |> range(start: 0)
+  |> filter(fn: (r) => r._measurement == m)
+  |> keep(columns: ["_time"])                 // 只看時間即可
+  |> aggregateWindow(every: 1d, fn: count, createEmpty: false)
+  |> yield(name: "rows_per_day")
+
+
+
+
+m = "arcsight_event"
+f = "count"   // 若沒有 count，改成 bytes_in 或 bytes_out 等存在的欄位
 
 from(bucket: "SOC")
   |> range(start: v.timeRangeStart, stop: v.timeRangeStop)
   |> filter(fn: (r) => r._measurement == m)
   |> filter(fn: (r) => r._field == f)
-  |> map(fn: (r) => ({ r with _value: float(v: r._value) }))
+  |> map(fn: (r) => ({ r with _value: float(v: r._value) })) // 型別保險
   |> aggregateWindow(every: v.windowPeriod, fn: sum, createEmpty: false)
   |> group(columns: ["_field"]) // 想分裝置就改 ["device_name"]
   |> keep(columns: ["_time","_value","_field","device_name"])
   |> yield(name: "timeseries")
+

@@ -19,3 +19,13 @@ latest = from(bucket: "SOC")
 latest
   |> map(fn: (r) => ({ r with delta_sec: int(v: (now() - r._time) / 1s) }))
   |> yield(name: "now_minus_time_sec")
+
+
+
+from(bucket: "SOC")
+  |> range(start: v.timeRangeStart, stop: time(v: "2100-01-01T00:00:00Z"))
+  |> filter(fn: (r) => r._measurement == "arcsight_event")
+  |> filter(fn: (r) => r._field == "count")  // 改成現有的 field
+  |> map(fn: (r) => ({ r with _value: float(v: r._value) }))
+  |> aggregateWindow(every: v.windowPeriod, fn: sum, createEmpty: false)
+  |> yield(name: "timeseries_tmp")

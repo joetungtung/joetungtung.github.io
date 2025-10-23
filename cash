@@ -1,12 +1,20 @@
-def fix_influx_type_conflicts(df: pd.DataFrame):
-    for col in df.columns:
-        if df[col].dtype == object:  # 文字欄位
-            # 針對 "passed", "blocked" 等關鍵字避免被當成 boolean
-            df[col] = df[col].astype(str)
-        elif df[col].dtype == bool:
-            # Boolean 轉成字串 "true"/"false"
-            df[col] = df[col].apply(lambda x: "true" if x else "false")
-    return df
+import "influxdata/influxdb/schema"
 
+// 看這個 measurement 的所有 field keys
+schema.fieldKeys(
+  bucket: "SOC",
+  predicate: (r) => r._measurement == "fw_log",
+)
 
-df = fix_influx_type_conflicts(df)
+// 看所有 tag keys
+schema.tagKeys(
+  bucket: "SOC",
+  predicate: (r) => r._measurement == "fw_log",
+)
+
+// 看某個 tag 的所有值（確認有沒有寫進來）
+schema.tagValues(
+  bucket: "SOC",
+  tag: "device_name",
+  predicate: (r) => r._measurement == "fw_log",
+)

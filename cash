@@ -1,20 +1,2 @@
-import "influxdata/influxdb/schema"
+invalid: failed to initialize execute state: tried to produce more than one result with the name "_result"
 
-// 看這個 measurement 的所有 field keys
-schema.fieldKeys(
-  bucket: "SOC",
-  predicate: (r) => r._measurement == "fw_log",
-)
-
-// 看所有 tag keys
-schema.tagKeys(
-  bucket: "SOC",
-  predicate: (r) => r._measurement == "fw_log",
-)
-
-// 看某個 tag 的所有值（確認有沒有寫進來）
-schema.tagValues(
-  bucket: "SOC",
-  tag: "device_name",
-  predicate: (r) => r._measurement == "fw_log",
-)

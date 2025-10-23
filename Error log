@@ -1,5 +1,13 @@
-Traceback (most recent call last):
-  File "D:\Joe\Develop\GrafanaInfluxdb\Autoimport\Arcsight_Ingest.py", line 113, in <module>
-    def _epoch_to_utc_ts(v: float) -> pd.Timestamp | pd.NaT:
-                                      ~~~~~~~~~~~~~^~~~~~~~
-TypeError: unsupported operand type(s) for |: 'type' and 'NaTType'
+def _epoch_to_utc_ts(v: float) -> Optional[pd.Timestamp]:
+    try:
+        v = float(v)
+    except Exception:
+        return None  # 原本是 pd.NaT，這裡改成 None，Series 會自動轉成 NaT
+    # 自動判斷單位：ns / ms / s
+    if v > 1e14:        # ns
+        secs = v / 1_000_000_000.0
+    elif v > 1e11:      # ms
+        secs = v / 1_000.0
+    else:               # s
+        secs = v
+    return pd.Timestamp(datetime.fromtimestamp(secs, tz=timezone.utc))

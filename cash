@@ -1,29 +1,21 @@
+// A. 取最新一筆（含未來）
 from(bucket: "SOC")
-  |> range(start: 0, stop: time(v: "2100-01-01T00:00:00Z"))
+  |> range(start: -50y, stop: time(v: "2100-01-01T00:00:00Z"))
   |> filter(fn: (r) => r._measurement == "arcsight_event")
+  |> sort(columns: ["_time"], desc: true)
   |> limit(n: 1)
-  |> yield(name: "any_one_point_including_future")
+  |> yield(name: "latest_point")
 
 
 
 
-m = "arcsight_event"
-
-d = from(bucket: "SOC")
-  |> range(start: -50y, stop: time(v: "2100-01-01T00:00:00Z"))
-  |> filter(fn: (r) => r._measurement == m)
-  |> keep(columns: ["_time"])
-  |> group()
-
-d |> sort(columns: ["_time"], desc: false) |> limit(n: 1) |> yield(name: "earliest_time")
-d |> sort(columns: ["_time"], desc: true)  |> limit(n: 1) |> yield(name: "latest_time")
-
-
-
-
-from(bucket: "SOC")
+// B. 同時看現在(now)與最新點的時間差（秒）— 正表示未來
+latest = from(bucket: "SOC")
   |> range(start: -50y, stop: time(v: "2100-01-01T00:00:00Z"))
   |> filter(fn: (r) => r._measurement == "arcsight_event")
-  |> keep(columns: ["_time"])
-  |> count()
-  |> yield(name: "row_count_all_time")
+  |> sort(columns: ["_time"], desc: true)
+  |> limit(n: 1)
+
+latest
+  |> map(fn: (r) => ({ r with delta_sec: int(v: (now() - r._time) / 1s) }))
+  |> yield(name: "now_minus_time_sec")

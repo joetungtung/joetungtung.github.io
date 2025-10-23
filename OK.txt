@@ -87,3 +87,19 @@ from(bucket: "SOC")
   |> group(columns: ["device_vendor"])
   |> sum(column: "_value")
   |> sort(columns: ["_value"], desc: true)
+
+
+
+
+Top 10 攻擊手法 (event_name)」橫條圖
+from(bucket: "SOC")
+  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)
+  |> filter(fn: (r) => r._measurement == "arcsight_event")
+  |> filter(fn: (r) => r._field == "count")          // 事件次數
+  |> filter(fn: (r) => exists r.event_name)          // 若沒有這欄改成 rule_name
+  |> group(columns: ["event_name"])
+  |> sum(column: "_value")
+  |> rename(columns: {_value: "events"})
+  |> sort(columns: ["events"], desc: true)
+  |> limit(n: 10)
+  |> keep(columns: ["event_name","events"])

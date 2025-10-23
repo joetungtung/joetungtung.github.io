@@ -1,142 +1,65 @@
+FW 每分鐘事件量（Time series）
+import "strings"
 
-D:\Joe\Develop\GrafanaInfluxdb\Autoimport>python Arcsight_Ingest.py
-[INFO] === radware === files=12 dir=downloads\Radware
-[DEBUG][time] file='[SOC][Radware] last 5m Event_10-23-25 8-21-27 AM.csv' source='End Time' parsed_ok=62 missing=0
-[PARSE] radware: [SOC][Radware] last 5m Event_10-23-25 8-21-27 AM.csv -> 62 rows
-[OK] wrote chunk 1/1 rows=62
-[OK] wrote total 62 rows to SOC/arcsight_event
-[DEBUG][time] file='[SOC][Radware] last 5m Event_10-23-25 8-26-27 AM.csv' source='End Time' parsed_ok=37 missing=0
-[PARSE] radware: [SOC][Radware] last 5m Event_10-23-25 8-26-27 AM.csv -> 37 rows
-[OK] wrote chunk 1/1 rows=37
-[OK] wrote total 37 rows to SOC/arcsight_event
-[DEBUG][time] file='[SOC][Radware] last 5m Event_10-23-25 8-31-27 AM.csv' source='End Time' parsed_ok=38 missing=0
-[PARSE] radware: [SOC][Radware] last 5m Event_10-23-25 8-31-27 AM.csv -> 38 rows
-[OK] wrote chunk 1/1 rows=38
-[OK] wrote total 38 rows to SOC/arcsight_event
-[DEBUG][time] file='[SOC][Radware] last 5m Event_10-23-25 8-36-27 AM.csv' source='End Time' parsed_ok=50 missing=0
-[PARSE] radware: [SOC][Radware] last 5m Event_10-23-25 8-36-27 AM.csv -> 50 rows
-[OK] wrote chunk 1/1 rows=50
-[OK] wrote total 50 rows to SOC/arcsight_event
-[DEBUG][time] file='[SOC][Radware] last 5m Event_10-23-25 8-41-27 AM.csv' source='End Time' parsed_ok=47 missing=0
-[PARSE] radware: [SOC][Radware] last 5m Event_10-23-25 8-41-27 AM.csv -> 47 rows
-[OK] wrote chunk 1/1 rows=47
-[OK] wrote total 47 rows to SOC/arcsight_event
-[DEBUG][time] file='[SOC][Radware] last 5m Event_10-23-25 8-46-27 AM.csv' source='End Time' parsed_ok=64 missing=0
-[PARSE] radware: [SOC][Radware] last 5m Event_10-23-25 8-46-27 AM.csv -> 64 rows
-[OK] wrote chunk 1/1 rows=64
-[OK] wrote total 64 rows to SOC/arcsight_event
-[DEBUG][time] file='[SOC][Radware] last 5m Event_10-23-25 8-51-27 AM.csv' source='End Time' parsed_ok=54 missing=0
-[PARSE] radware: [SOC][Radware] last 5m Event_10-23-25 8-51-27 AM.csv -> 54 rows
-[OK] wrote chunk 1/1 rows=54
-[OK] wrote total 54 rows to SOC/arcsight_event
-[DEBUG][time] file='[SOC][Radware] last 5m Event_10-23-25 8-56-27 AM.csv' source='End Time' parsed_ok=43 missing=0
-[PARSE] radware: [SOC][Radware] last 5m Event_10-23-25 8-56-27 AM.csv -> 43 rows
-[OK] wrote chunk 1/1 rows=43
-[OK] wrote total 43 rows to SOC/arcsight_event
-[DEBUG][time] file='[SOC][Radware] last 5m Event_10-23-25 9-01-27 AM.csv' source='End Time' parsed_ok=211 missing=0
-[PARSE] radware: [SOC][Radware] last 5m Event_10-23-25 9-01-27 AM.csv -> 211 rows
-[OK] wrote chunk 1/1 rows=211
-[OK] wrote total 211 rows to SOC/arcsight_event
-[DEBUG][time] file='[SOC][Radware] last 5m Event_10-23-25 9-06-27 AM.csv' source='End Time' parsed_ok=64 missing=0
-[PARSE] radware: [SOC][Radware] last 5m Event_10-23-25 9-06-27 AM.csv -> 64 rows
-[OK] wrote chunk 1/1 rows=64
-[OK] wrote total 64 rows to SOC/arcsight_event
-[DEBUG][time] file='[SOC][Radware] last 5m Event_10-23-25 9-11-27 AM.csv' source='End Time' parsed_ok=114 missing=0
-[PARSE] radware: [SOC][Radware] last 5m Event_10-23-25 9-11-27 AM.csv -> 114 rows
-[OK] wrote chunk 1/1 rows=114
-[OK] wrote total 114 rows to SOC/arcsight_event
-[DEBUG][time] file='[SOC][Radware] last 5m Event_10-23-25 9-16-27 AM.csv' source='End Time' parsed_ok=93 missing=0
-[PARSE] radware: [SOC][Radware] last 5m Event_10-23-25 9-16-27 AM.csv -> 93 rows
-[OK] wrote chunk 1/1 rows=93
-[OK] wrote total 93 rows to SOC/arcsight_event
-[INFO] === fw === files=12 dir=downloads\FW
-[DEBUG][time] file='[SOC][FW] last 5m Event_10-23-25 8-23-07 AM.csv' source='End Time' parsed_ok=10000 missing=0
-[PARSE] fw: [SOC][FW] last 5m Event_10-23-25 8-23-07 AM.csv -> 10000 rows
-[OK] wrote chunk 1/1 rows=10000
-[OK] wrote total 10000 rows to SOC/arcsight_event
-[DEBUG][time] file='[SOC][FW] last 5m Event_10-23-25 8-28-07 AM.csv' source='End Time' parsed_ok=10000 missing=0
-[PARSE] fw: [SOC][FW] last 5m Event_10-23-25 8-28-07 AM.csv -> 10000 rows
-[OK] wrote chunk 1/1 rows=10000
-[OK] wrote total 10000 rows to SOC/arcsight_event
-[DEBUG][time] file='[SOC][FW] last 5m Event_10-23-25 8-33-07 AM.csv' source='End Time' parsed_ok=10000 missing=0
-[PARSE] fw: [SOC][FW] last 5m Event_10-23-25 8-33-07 AM.csv -> 10000 rows
-[OK] wrote chunk 1/1 rows=10000
-[OK] wrote total 10000 rows to SOC/arcsight_event
-[DEBUG][time] file='[SOC][FW] last 5m Event_10-23-25 8-38-07 AM.csv' source='End Time' parsed_ok=10000 missing=0
-[PARSE] fw: [SOC][FW] last 5m Event_10-23-25 8-38-07 AM.csv -> 10000 rows
-[OK] wrote chunk 1/1 rows=10000
-[OK] wrote total 10000 rows to SOC/arcsight_event
-[DEBUG][time] file='[SOC][FW] last 5m Event_10-23-25 8-43-07 AM.csv' source='End Time' parsed_ok=10000 missing=0
-[PARSE] fw: [SOC][FW] last 5m Event_10-23-25 8-43-07 AM.csv -> 10000 rows
-[OK] wrote chunk 1/1 rows=10000
-[OK] wrote total 10000 rows to SOC/arcsight_event
-[DEBUG][time] file='[SOC][FW] last 5m Event_10-23-25 8-48-07 AM.csv' source='End Time' parsed_ok=10000 missing=0
-[PARSE] fw: [SOC][FW] last 5m Event_10-23-25 8-48-07 AM.csv -> 10000 rows
-[OK] wrote chunk 1/1 rows=10000
-[OK] wrote total 10000 rows to SOC/arcsight_event
-[DEBUG][time] file='[SOC][FW] last 5m Event_10-23-25 8-53-07 AM.csv' source='End Time' parsed_ok=10000 missing=0
-[PARSE] fw: [SOC][FW] last 5m Event_10-23-25 8-53-07 AM.csv -> 10000 rows
-[OK] wrote chunk 1/1 rows=10000
-[OK] wrote total 10000 rows to SOC/arcsight_event
-[DEBUG][time] file='[SOC][FW] last 5m Event_10-23-25 8-58-07 AM.csv' source='End Time' parsed_ok=10000 missing=0
-[PARSE] fw: [SOC][FW] last 5m Event_10-23-25 8-58-07 AM.csv -> 10000 rows
-[OK] wrote chunk 1/1 rows=10000
-[OK] wrote total 10000 rows to SOC/arcsight_event
-[DEBUG][time] file='[SOC][FW] last 5m Event_10-23-25 9-03-07 AM.csv' source='End Time' parsed_ok=10000 missing=0
-[PARSE] fw: [SOC][FW] last 5m Event_10-23-25 9-03-07 AM.csv -> 10000 rows
-[OK] wrote chunk 1/1 rows=10000
-[OK] wrote total 10000 rows to SOC/arcsight_event
-[DEBUG][time] file='[SOC][FW] last 5m Event_10-23-25 9-08-07 AM.csv' source='End Time' parsed_ok=10000 missing=0
-[PARSE] fw: [SOC][FW] last 5m Event_10-23-25 9-08-07 AM.csv -> 10000 rows
-[OK] wrote chunk 1/1 rows=10000
-[OK] wrote total 10000 rows to SOC/arcsight_event
-[DEBUG][time] file='[SOC][FW] last 5m Event_10-23-25 9-13-07 AM.csv' source='End Time' parsed_ok=10000 missing=0
-[PARSE] fw: [SOC][FW] last 5m Event_10-23-25 9-13-07 AM.csv -> 10000 rows
-[OK] wrote chunk 1/1 rows=10000
-[OK] wrote total 10000 rows to SOC/arcsight_event
-[DEBUG][time] file='[SOC][FW] last 5m Event_10-23-25 9-18-07 AM.csv' source='End Time' parsed_ok=10000 missing=0
-[PARSE] fw: [SOC][FW] last 5m Event_10-23-25 9-18-07 AM.csv -> 10000 rows
-[OK] wrote chunk 1/1 rows=10000
-[OK] wrote total 10000 rows to SOC/arcsight_event
-[INFO] === waf === files=10 dir=downloads\WAF
-[DEBUG][time] file='[SOC][WAF] last 5m Event_10-23-25 8-34-34 AM.csv' source='End Time' parsed_ok=10000 missing=0
-[PARSE] waf: [SOC][WAF] last 5m Event_10-23-25 8-34-34 AM.csv -> 10000 rows
-[OK] wrote chunk 1/1 rows=10000
-[OK] wrote total 10000 rows to SOC/arcsight_event
-[DEBUG][time] file='[SOC][WAF] last 5m Event_10-23-25 8-39-34 AM.csv' source='End Time' parsed_ok=10000 missing=0
-[PARSE] waf: [SOC][WAF] last 5m Event_10-23-25 8-39-34 AM.csv -> 10000 rows
-[OK] wrote chunk 1/1 rows=10000
-[OK] wrote total 10000 rows to SOC/arcsight_event
-[DEBUG][time] file='[SOC][WAF] last 5m Event_10-23-25 8-44-34 AM.csv' source='End Time' parsed_ok=10000 missing=0
-[PARSE] waf: [SOC][WAF] last 5m Event_10-23-25 8-44-34 AM.csv -> 10000 rows
-[OK] wrote chunk 1/1 rows=10000
-[OK] wrote total 10000 rows to SOC/arcsight_event
-[DEBUG][time] file='[SOC][WAF] last 5m Event_10-23-25 8-49-34 AM.csv' source='End Time' parsed_ok=10000 missing=0
-[PARSE] waf: [SOC][WAF] last 5m Event_10-23-25 8-49-34 AM.csv -> 10000 rows
-[OK] wrote chunk 1/1 rows=10000
-[OK] wrote total 10000 rows to SOC/arcsight_event
-[DEBUG][time] file='[SOC][WAF] last 5m Event_10-23-25 8-54-34 AM.csv' source='End Time' parsed_ok=10000 missing=0
-[PARSE] waf: [SOC][WAF] last 5m Event_10-23-25 8-54-34 AM.csv -> 10000 rows
-[OK] wrote chunk 1/1 rows=10000
-[OK] wrote total 10000 rows to SOC/arcsight_event
-[DEBUG][time] file='[SOC][WAF] last 5m Event_10-23-25 8-59-34 AM.csv' source='End Time' parsed_ok=10000 missing=0
-[PARSE] waf: [SOC][WAF] last 5m Event_10-23-25 8-59-34 AM.csv -> 10000 rows
-[OK] wrote chunk 1/1 rows=10000
-[OK] wrote total 10000 rows to SOC/arcsight_event
-[DEBUG][time] file='[SOC][WAF] last 5m Event_10-23-25 9-04-34 AM.csv' source='End Time' parsed_ok=10000 missing=0
-[PARSE] waf: [SOC][WAF] last 5m Event_10-23-25 9-04-34 AM.csv -> 10000 rows
-[OK] wrote chunk 1/1 rows=10000
-[OK] wrote total 10000 rows to SOC/arcsight_event
-[DEBUG][time] file='[SOC][WAF] last 5m Event_10-23-25 9-09-34 AM.csv' source='End Time' parsed_ok=10000 missing=0
-[PARSE] waf: [SOC][WAF] last 5m Event_10-23-25 9-09-34 AM.csv -> 10000 rows
-[OK] wrote chunk 1/1 rows=10000
-[OK] wrote total 10000 rows to SOC/arcsight_event
-[DEBUG][time] file='[SOC][WAF] last 5m Event_10-23-25 9-14-34 AM.csv' source='End Time' parsed_ok=10000 missing=0
-[PARSE] waf: [SOC][WAF] last 5m Event_10-23-25 9-14-34 AM.csv -> 10000 rows
-[OK] wrote chunk 1/1 rows=10000
-[OK] wrote total 10000 rows to SOC/arcsight_event
-[DEBUG][time] file='[SOC][WAF] last 5m Event_10-23-25 9-19-34 AM.csv' source='End Time' parsed_ok=10000 missing=0
-[PARSE] waf: [SOC][WAF] last 5m Event_10-23-25 9-19-34 AM.csv -> 10000 rows
-[OK] wrote chunk 1/1 rows=10000
-[OK] wrote total 10000 rows to SOC/arcsight_event
-[SUMMARY] files=34, rows_written~=220877
+src = "FW"  // ← 這個面板抓 FW
+
+from(bucket: "SOC")
+  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)
+  |> filter(fn: (r) => r._measurement == "arcsight_event")
+  |> filter(fn: (r) => r._field == "count")
+  |> filter(fn: (r) =>
+      (exists r.device_name   and strings.containsStr(v: strings.toUpper(v: r.device_name),   substr: src)) or
+      (exists r["Agent Name"] and strings.containsStr(v: strings.toUpper(v: r["Agent Name"]), substr: src)) or
+      (exists r.product       and strings.containsStr(v: strings.toUpper(v: r.product),       substr: src)) or
+      (exists r.device_vendor and strings.containsStr(v: strings.toUpper(v: r.device_vendor), substr: src))
+  )
+  |> map(fn: (r) => ({ r with _value: float(v: r._value) }))
+  |> aggregateWindow(every: v.windowPeriod, fn: sum, createEmpty: false)
+  |> group(columns: ["device_name"])          // 想要總和就改成 group(columns: ["_field"])
+  |> keep(columns: ["_time","_value","device_name"])
+  |> yield(name: "FW_events_per_min")
+
+
+
+面板 2：WAF 每分鐘事件量
+import "strings"
+
+src = "WAF"
+
+from(bucket: "SOC")
+  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)
+  |> filter(fn: (r) => r._measurement == "arcsight_event")
+  |> filter(fn: (r) => r._field == "count")
+  |> filter(fn: (r) =>
+      (exists r.device_name   and strings.containsStr(v: strings.toUpper(v: r.device_name),   substr: src)) or
+      (exists r["Agent Name"] and strings.containsStr(v: strings.toUpper(v: r["Agent Name"]), substr: src)) or
+      (exists r.product       and strings.containsStr(v: strings.toUpper(v: r.product),       substr: src)) or
+      (exists r.device_vendor and strings.containsStr(v: strings.toUpper(v: r.device_vendor), substr: src))
+  )
+  |> map(fn: (r) => ({ r with _value: float(v: r._value) }))
+  |> aggregateWindow(every: v.windowPeriod, fn: sum, createEmpty: false)
+  |> group(columns: ["device_name"])
+  |> keep(columns: ["_time","_value","device_name"])
+  |> yield(name: "WAF_events_per_min")
+
+
+RADWARE 每分鐘事件量
+import "strings"
+
+src = "RADWARE"
+
+from(bucket: "SOC")
+  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)
+  |> filter(fn: (r) => r._measurement == "arcsight_event")
+  |> filter(fn: (r) => r._field == "count")
+  |> filter(fn: (r) =>
+      (exists r.device_name   and strings.containsStr(v: strings.toUpper(v: r.device_name),   substr: src)) or
+      (exists r["Agent Name"] and strings.containsStr(v: strings.toUpper(v: r["Agent Name"]), substr: src)) or
+      (exists r.product       and strings.containsStr(v: strings.toUpper(v: r.product),       substr: src)) or
+      (exists r.device_vendor and strings.containsStr(v: strings.toUpper(v: r.device_vendor), substr: src))
+  )
+  |> map(fn: (r) => ({ r with _value: float(v: r._value) }))
+  |> aggregateWindow(every: v.windowPeriod, fn: sum, createEmpty: false)
+  |> group(columns: ["device_name"])
+  |> keep(columns: ["_time","_value","device_name"])
+  |> yield(name: "RADWARE_events_per_min")

@@ -1,1 +1,2 @@
-invalid: error @39:20-39:41: found unexpected argument columns (Expected `column`)
+invalid: error @9:50-9:65: time is not Subtractable error @9:69-9:71: expected time but found duration error @9:49-9:71: time is not Divisible
+

@@ -1,2 +1,28 @@
-invalid: failed to initialize execute state: tried to produce more than one result with the name "_result"
+b = "SOC"
+m = "fw_log"
 
+from(bucket: b)
+  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)
+  |> filter(fn: (r) => r._measurement == m)
+  |> filter(fn: (r) => r._field == "count")
+  |> aggregateWindow(every: v.windowPeriod, fn: sum, createEmpty: false)
+  |> keep(columns: ["_time", "_value", "device_name"])
+  |> group(columns: ["device_name"]) // 需要分裝置就留著，不要就改 group(columns: ["_field"])
+  |> yield(name: "count_per_window")
+
+
+
+b = "SOC"
+m = "fw_log"
+
+from(bucket: b)
+  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)
+  |> filter(fn: (r) => r._measurement == m)
+  |> filter(fn: (r) => r._field == "count")
+  |> aggregateWindow(every: inf, fn: sum, createEmpty: false) // 匯總整個時間區間
+  |> group(columns: ["rule_name"])
+  |> sum(column: "_value")
+  |> drop(columns: ["_start","_stop"]) // 乾淨一些
+  |> sort(columns: ["_value"], desc: true)
+  |> limit(n: 10)
+  |> yield(name: "top10_rules")

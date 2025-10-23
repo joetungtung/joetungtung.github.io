@@ -1,28 +1,94 @@
-b = "SOC"
-m = "fw_log"
+m = "arcsight_event"
 
-from(bucket: b)
+d = from(bucket: "SOC")
+  |> range(start: -90d)
+  |> filter(fn: (r) => r._measurement == m)
+  |> keep(columns: ["_time"])
+  |> group()
+
+d |> first() |> yield(name: "first_point_time")
+d |> last()  |> yield(name: "last_point_time")
+d |> count() |> yield(name: "row_count_90d")
+
+
+
+
+
+
+import "influxdata/influxdb/schema"
+m = "arcsight_event"
+
+schema.fieldKeys(bucket: "SOC", predicate: (r) => r._measurement == m)
+  |> yield(name: "fieldKeys")
+
+schema.tagKeys(bucket: "SOC", predicate: (r) => r._measurement == m)
+  |> yield(name: "tagKeys")
+
+
+
+
+m = "arcsight_event"
+f = "count"   // 如果上一步沒有 count，就換成有看到的 field 名稱（例如 bytes_in）
+
+from(bucket: "SOC")
+  |> range(start: -30d)
+  |> filter(fn: (r) => r._measurement == m)
+  |> filter(fn: (r) => r._field == f)
+  |> limit(n: 20)
+  |> yield(name: "peek_field")
+
+
+
+
+
+
+m = "arcsight_event"
+f = "count"
+
+from(bucket: "SOC")
   |> range(start: v.timeRangeStart, stop: v.timeRangeStop)
   |> filter(fn: (r) => r._measurement == m)
-  |> filter(fn: (r) => r._field == "count")
+  |> filter(fn: (r) => r._field == f)
+  |> map(fn: (r) => ({ r with _value: float(v: r._value) }))   // 型別保險
   |> aggregateWindow(every: v.windowPeriod, fn: sum, createEmpty: false)
-  |> keep(columns: ["_time", "_value", "device_name"])
-  |> group(columns: ["device_name"]) // 需要分裝置就留著，不要就改 group(columns: ["_field"])
+  |> group(columns: ["device_name"])    // 不分裝置就改成 ["_field"]
+  |> keep(columns: ["_time","_value","device_name"])
   |> yield(name: "count_per_window")
 
 
 
-b = "SOC"
-m = "fw_log"
 
-from(bucket: b)
+
+m = "arcsight_event"
+
+from(bucket: "SOC")
+  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)
+  |> filter(fn: (r) => r._measurement == m)
+  |> filter(fn: (r) => r._field == "bytes_in" or r._field == "bytes_out")
+  |> aggregateWindow(every: v.windowPeriod, fn: sum, createEmpty: false)
+  |> pivot(rowKey:["_time"], columnKey:["_field"], valueColumn:"_value")
+  |> map(fn: (r) => ({
+      r with throughput: float(v: r.bytes_in) + float(v: r.bytes_out)
+    }))
+  |> keep(columns: ["_time","throughput","device_name"])
+  |> group(columns: ["device_name"])
+  |> yield(name: "throughput")
+
+
+
+m = "arcsight_event"
+
+from(bucket: "SOC")
   |> range(start: v.timeRangeStart, stop: v.timeRangeStop)
   |> filter(fn: (r) => r._measurement == m)
   |> filter(fn: (r) => r._field == "count")
-  |> aggregateWindow(every: inf, fn: sum, createEmpty: false) // 匯總整個時間區間
+  |> map(fn: (r) => ({ r with _value: float(v: r._value) }))
+  |> aggregateWindow(every: inf, fn: sum, createEmpty: false)   // 匯總整段時間
   |> group(columns: ["rule_name"])
   |> sum(column: "_value")
-  |> drop(columns: ["_start","_stop"]) // 乾淨一些
   |> sort(columns: ["_value"], desc: true)
   |> limit(n: 10)
   |> yield(name: "top10_rules")
+
+
+

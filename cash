@@ -1,52 +1,27 @@
-m = "arcsight_event"
+from(bucket: "SOC")
+  |> range(start: 0)                           // 全時間，避免被面板時間範圍卡住
+  |> filter(fn: (r) => r._measurement == "arcsight_event")
+  |> limit(n: 1)
+  |> yield(name: "any_one_point")
 
-d = from(bucket: "SOC")
-  |> range(start: 0)                      // 全時間
-  |> filter(fn: (r) => r._measurement == m)
+
+
+
+from(bucket: "SOC")
+  |> range(start: 0)
+  |> filter(fn: (r) => r._measurement == "arcsight_event")
   |> keep(columns: ["_time"])
-  |> group()
-
-d |> first() |> yield(name: "first_point_time")
-d |> last()  |> yield(name: "last_point_time")
-d |> count() |> yield(name: "row_count_all")
-
-
-
-
-
-m = "arcsight_event"
-
-from(bucket: "SOC")
-  |> range(start: 0)
-  |> filter(fn: (r) => r._measurement == m)
   |> sort(columns: ["_time"], desc: true)
-  |> limit(n: 50)
-  |> yield(name: "latest_50")
+  |> limit(n: 1)
+  |> yield(name: "latest_time")
 
 
 
-m = "arcsight_event"
+
 
 from(bucket: "SOC")
   |> range(start: 0)
-  |> filter(fn: (r) => r._measurement == m)
-  |> keep(columns: ["_time"])                 // 只看時間即可
-  |> aggregateWindow(every: 1d, fn: count, createEmpty: false)
-  |> yield(name: "rows_per_day")
-
-
-
-
-m = "arcsight_event"
-f = "count"   // 若沒有 count，改成 bytes_in 或 bytes_out 等存在的欄位
-
-from(bucket: "SOC")
-  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)
-  |> filter(fn: (r) => r._measurement == m)
-  |> filter(fn: (r) => r._field == f)
-  |> map(fn: (r) => ({ r with _value: float(v: r._value) })) // 型別保險
-  |> aggregateWindow(every: v.windowPeriod, fn: sum, createEmpty: false)
-  |> group(columns: ["_field"]) // 想分裝置就改 ["device_name"]
-  |> keep(columns: ["_time","_value","_field","device_name"])
-  |> yield(name: "timeseries")
-
+  |> filter(fn: (r) => r._measurement == "arcsight_event")
+  |> keep(columns: ["_time"])
+  |> count()
+  |> yield(name: "row_count_all")

@@ -95,18 +95,15 @@ Top 10 攻擊手法 (event_name)」橫條圖
 from(bucket: "SOC")
   |> range(start: v.timeRangeStart, stop: v.timeRangeStop)
   |> filter(fn: (r) => r._measurement == "arcsight_event")
-  |> filter(fn: (r) => r._field == "count")          // 事件次數
-  |> filter(fn: (r) => exists r.event_name)          // 若沒有這欄改成 rule_name
+  |> filter(fn: (r) => r._field == "count")
+  |> filter(fn: (r) => exists r.event_name)        // 沒有 event_name 就換 rule_name
   |> group(columns: ["event_name"])
   |> sum(column: "_value")
-  |> rename(columns: {_value: "events"})
-  |> sort(columns: ["events"], desc: true)
+  |> rename(columns: {event_name: "name", _value: "value"})
+  |> keep(columns: ["name","value"])
+  |> sort(columns: ["value"], desc: true)
   |> limit(n: 10)
-  |> keep(columns: ["event_name","events"])
 
 
-import "influxdata/influxdb/schema"
-schema.tagKeys(bucket: "SOC", predicate: (r) => r._measurement == "arcsight_event")
-  |> yield(name: "tags")
 
 

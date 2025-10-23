@@ -1,5 +1,10 @@
-# 統一數值欄位型別（避免 field type 衝突）
-numeric_fields = ["bytes_in", "bytes_out", "src_port", "dst_port", "flex_num1", "count"]
-for c in numeric_fields:
+# --- 統一可疑欄位為字串，避免 invalid boolean 問題 ---
+force_string_fields = [
+    "device_action", "severity", "rule_name",
+    "agent_type", "agent_name",
+    "protocol", "app_protocol",
+]
+for c in force_string_fields:
     if c in df.columns:
-        df[c] = pd.to_numeric(df[c], errors="coerce").astype("float64")
+        df[c] = df[c].astype(str)
+

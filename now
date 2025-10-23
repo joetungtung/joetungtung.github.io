@@ -1,39 +1,102 @@
-import logging
-logging.basicConfig(level=logging.INFO)
-logging.getLogger("influxdb_client.client.write").setLevel(logging.DEBUG)
-logging.getLogger("urllib3").setLevel(logging.WARNING)
+from datetime import datetime, timezone
+from zoneinfo import ZoneInfo
+import re
+import numpy as np
 
+_EPOCH_RE = re.compile(r"^\d{9,}$")  # 9 位以上的純數字，就當作 epoch
 
-
-def smoke_test_influx():
-    from influxdb_client import InfluxDBClient
-    from influxdb_client.client.write_api import SYNCHRONOUS
-    import pandas as pd
-    from datetime import datetime, timezone
-
-    test = pd.DataFrame([{
-        "event_ts": pd.Timestamp(datetime.now(timezone.utc)),
-        "product": "smoke",
-        "count": 1
-    }])
+def _epoch_to_utc_ts(v: float) -> pd.Timestamp | pd.NaT:
     try:
-        with InfluxDBClient(url=INFLUX_URL, org=ORG, token=TOKEN, timeout=60000) as cli:
-            w = cli.write_api(write_options=SYNCHRONOUS)
-            w.write(
-                bucket=BUCKET, org=ORG, record=test,
-                data_frame_measurement_name=MEAS,
-                data_frame_tag_columns=["product"],
-                data_frame_timestamp_column="event_ts",
-            )
-        print("[SMOKE] OK: single row written")
-    except Exception as e:
-        import traceback; traceback.print_exc()
-        print("[SMOKE] FAIL:", e)
+        v = float(v)
+    except Exception:
+        return pd.NaT
+    # 自動判斷單位：ns / ms / s
+    if v > 1e14:        # ns
+        secs = v / 1_000_000_000.0
+    elif v > 1e11:      # ms
+        secs = v / 1_000.0
+    else:               # s
+        secs = v
+    return pd.Timestamp(datetime.fromtimestamp(secs, tz=timezone.utc))
 
-# 先只跑煙囪測試（要測完整流程時把下一行註解掉）
-# smoke_test_influx();  import sys; sys.exit(0)
+def to_ts(s: pd.Series) -> pd.Series:
+    """把各種時間格式轉成『UTC 時區的 pandas.Timestamp』。
+       規則：
+       1) 純數字 → epoch（自動判斷 s/ms/ns）
+       2) 有時區的字串（含 Z 或 ±HH:MM）→ 直接轉成 UTC
+       3) 沒時區的字串 → 視為 Asia/Taipei 後轉成 UTC
+    """
+    if s is None:
+        return pd.Series(pd.NaT, index=s.index)
+
+    ss = s.astype(str).str.strip()
+
+    # 1) 先處理純 epoch
+    is_epoch = ss.str.match(_EPOCH_RE)
+    out = pd.Series(pd.NaT, index=ss.index, dtype="datetime64[ns, UTC]")
+    if is_epoch.any():
+        out.loc[is_epoch] = ss[is_epoch].apply(_epoch_to_utc_ts)
+
+    # 2) 其餘當作日期字串
+    others = ~is_epoch
+    if others.any():
+        # 2a) 先嘗試解析（不強制加 UTC），保留原有時區
+        parsed = pd.to_datetime(ss[others], errors="coerce", utc=False, infer_datetime_format=True)
+
+        if parsed.notna().any():
+            # 有時區資訊 → 轉 UTC
+            has_tz = parsed.dt.tz.notna()
+            if has_tz.any():
+                out.loc[others[others].index[has_tz]] = parsed[has_tz].dt.tz_convert("UTC")
+
+            # 沒時區資訊 → 當作台北本地，再轉 UTC
+            no_tz = ~has_tz
+            if no_tz.any():
+                localized = parsed[no_tz].dt.tz_localize(ZoneInfo("Asia/Taipei"), nonexistent="shift_forward", ambiguous="NaT")
+                out.loc[others[others].index[no_tz]] = localized.dt.tz_convert("UTC")
+
+    return out
+
+
+
+
+df["event_ts"] = pd.to_datetime(datetime.fromtimestamp(path.stat().st_mtime, tz=timezone.utc))
+
+
+
+
+from(bucket: "SOC")
+  |> range(start: -6h)
+  |> filter(fn: (r) => r._measurement == "arcsight_event")
+  |> sort(columns: ["_time"], desc: true)
+  |> limit(n: 3)
 
 
 
 
 
+latest =
+  from(bucket: "SOC")
+    |> range(start: -1d)
+    |> filter(fn: (r) => r._measurement == "arcsight_event")
+    |> sort(columns: ["_time"], desc: true)
+    |> limit(n: 1)
+
+latest
+  |> map(fn: (r) => ({
+        r with delta_sec: int(
+          v: (float(v: uint(v: now())) - float(v: uint(v: r._time))) / 1000000000.0
+        )
+      }))
+
+
+
+
+
+from(bucket: "SOC")
+  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)
+  |> filter(fn: (r) => r._measurement == "arcsight_event")
+  |> filter(fn: (r) => r._field == "count")
+  |> map(fn: (r) => ({ r with _value: float(v: r._value) }))
+  |> aggregateWindow(every: v.windowPeriod, fn: sum, createEmpty: false)
+  |> group(columns: ["_field"])

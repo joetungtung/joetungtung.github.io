@@ -1,20 +1,10 @@
-# 放在檔案同一位置，覆蓋既有的 to_ts() 與 _epoch_to_utc_ts()
-from typing import Optional
-from datetime import datetime, timezone
-from zoneinfo import ZoneInfo
-import re
-import numpy as np
-import pandas as pd
-
 _EPOCH_RE = re.compile(r"^\d{9,}$")  # 9位以上純數字 → 視為 epoch
 
 def _epoch_to_utc_ts(v: float) -> Optional[pd.Timestamp]:
-    # 回傳 None 讓 pandas 自動轉成 NaT（Py3.9 相容）
     try:
         v = float(v)
     except Exception:
         return None
-    # 自動判斷單位 ns/ms/s
     if v > 1e14:        # ns
         secs = v / 1_000_000_000.0
     elif v > 1e11:      # ms
@@ -25,56 +15,42 @@ def _epoch_to_utc_ts(v: float) -> Optional[pd.Timestamp]:
 
 def to_ts(s: pd.Series) -> pd.Series:
     """
-    將各種時間格式轉成『UTC』Timestamp（tz-aware）。
-    規則：
-      1) 純數字 → epoch（自動判斷 s/ms/ns）
-      2) 含時區字串（Z 或 ±HH:MM）→ 轉成 UTC
-      3) 無時區字串 → 視為 Asia/Taipei，再轉 UTC
-    注意：穩健處理空 Series、全是 epoch / 全不是 epoch 的情況。
+    轉成 UTC Timestamp，容錯強。
+    1) 純數字 → epoch
+    2) 含時區 → 轉 UTC
+    3) 無時區 → 視為 Asia/Taipei，再轉 UTC
     """
     if s is None:
-        # 呼叫端若傳 None，回空 Series（避免 AttributeError）
         return pd.Series([], dtype="datetime64[ns, UTC]")
 
-    # 先標準化為字串並去頭尾空白
     ss = s.astype(str).str.strip()
-    # 建立輸出框架（與輸入同 index）
     out = pd.Series(pd.NaT, index=ss.index, dtype="datetime64[ns, UTC]")
 
-    # 1) epoch 分流（True/False 的布林遮罩，index 對齊 ss）
     is_epoch = ss.str.match(_EPOCH_RE)
-    if bool(is_epoch.any()):
-        # 單筆 apply：None 會自動變 NaT
+    if is_epoch.any():
         out.loc[is_epoch] = ss[is_epoch].apply(_epoch_to_utc_ts)
 
-    # 2) 其餘視為日期字串
     others_mask = ~is_epoch
-    if bool(others_mask.any()):
-        # 2a) 嘗試解析（不強制加 UTC，保留原始 tz）
+    if others_mask.any():
+        # 嘗試解析日期字串
         parsed = pd.to_datetime(ss[others_mask], errors="coerce", utc=False)
-
-        # 解析失敗的直接跳過（維持 NaT）
-        if isinstance(parsed, pd.Series) and bool(parsed.notna().any()):
-            # has_tz / no_tz 皆對齊「others」的 index
+        # 如果 pandas 回傳的不是 Series（極端錯誤情況）就跳過
+        if not isinstance(parsed, pd.Series):
+            return out
+        # 解析成功再處理
+        if parsed.notna().any():
             has_tz_mask = parsed.dt.tz.notna()
             no_tz_mask  = ~has_tz_mask
-
-            # 2b) 含時區 → 直接轉 UTC
-            if bool(has_tz_mask.any()):
-                out.loc[has_tz_mask[has_tz_mask].index] = parsed[has_tz_mask].dt.tz_convert("UTC")
-
-            # 2c) 無時區 → 當作台北時間，再轉 UTC
-            if bool(no_tz_mask.any()):
-                # 注意夏令/不存在時間以 shift_forward 處理，ambiguous → NaT
+            if has_tz_mask.any():
+                out.loc[parsed.index[has_tz_mask]] = parsed[has_tz_mask].dt.tz_convert("UTC")
+            if no_tz_mask.any():
                 localized = parsed[no_tz_mask].dt.tz_localize(
                     ZoneInfo("Asia/Taipei"),
                     nonexistent="shift_forward",
                     ambiguous="NaT",
                 )
-                out.loc[no_tz_mask[no_tz_mask].index] = localized.dt.tz_convert("UTC")
-
+                out.loc[parsed.index[no_tz_mask]] = localized.dt.tz_convert("UTC")
     return out
-
 
 
 

@@ -1,10 +1,33 @@
-// A. 取最新一筆（含未來）
+from datetime import datetime, timezone
+from zoneinfo import ZoneInfo  # Python 3.9+ 內建
+
+# 假設 End Time 是 "2025-10-23 16:43:19"
+end_time_str = row["End Time"]
+
+# 1️⃣ 明確告訴 Python 這是台北時間
+local_dt = datetime.strptime(end_time_str, "%Y-%m-%d %H:%M:%S").replace(tzinfo=ZoneInfo("Asia/Taipei"))
+
+# 2️⃣ 轉成 UTC
+utc_dt = local_dt.astimezone(timezone.utc)
+
+# 3️⃣ 寫入 Influx 時用 UTC-aware datetime
+point = (
+    Point("arcsight_event")
+    .tag("device_name", device_name)
+    .field("count", int(count))
+    .time(utc_dt)   # ✅ 一定要用 UTC-aware 時間
+)
+
+write_api.write(bucket="SOC", record=point)
+
+
+
+
 from(bucket: "SOC")
-  |> range(start: -50y, stop: time(v: "2100-01-01T00:00:00Z"))
+  |> range(start: -1h)
   |> filter(fn: (r) => r._measurement == "arcsight_event")
-  |> sort(columns: ["_time"], desc: true)
-  |> limit(n: 1)
-  |> yield(name: "latest_point")
+  |> limit(n: 5)
+
 
 
 
@@ -27,12 +50,3 @@ latest
         )
       }))
   |> yield(name: "now_minus_time_sec")
-
-
-from(bucket: "SOC")
-  |> range(start: -50y, stop: time(v: "2100-01-01T00:00:00Z"))
-  |> filter(fn: (r) => r._measurement == "arcsight_event")
-  |> filter(fn: (r) => r._time > now())   // 抓到就表示寫到未來
-  |> sort(columns: ["_time"], desc: false)
-  |> limit(n: 20)
-  |> yield(name: "points_in_future")

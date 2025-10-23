@@ -1,2 +1,0 @@
-A query returned too many datapoints and the results have been truncated at 5001 points to prevent memory issues. At the current graph size, Grafana can only draw 500.
-

@@ -1,4 +1,5 @@
-print(f"[DEBUG][sample time] file={path.name}, head={tcol.head(3).tolist()}")
+print(f"[DEBUG][columns] file={path.name}")
+print(raw.columns.tolist())
 
 
 

@@ -50,3 +50,33 @@ from(bucket: "SOC")
       (exists r["Agent Name"] and strings.containsStr(v: strings.toUpper(v: r["Agent Name"]), substr: "RADWARE"))
   )
   |> limit(n: 10)
+
+
+
+
+import "influxdata/influxdb/schema"
+schema.fieldKeys(bucket: "SOC", predicate: (r) => r._measurement == "arcsight_event")
+  |> yield(name: "fieldKeys")
+
+
+
+
+
+import "influxdata/influxdb/schema"
+schema.tagKeys(bucket: "SOC", predicate: (r) => r._measurement == "arcsight_event")
+  |> yield(name: "tagKeys")
+
+
+
+
+
+
+from(bucket: "SOC")
+  |> range(start: -24h)
+  |> filter(fn: (r) => r._measurement == "arcsight_event")
+  |> filter(fn: (r) => exists r["Source IP"])
+  |> group(columns: ["Source IP"])
+  |> count(column: "_value")
+  |> sort(columns: ["_value"], desc: true)
+  |> limit(n: 10)
+

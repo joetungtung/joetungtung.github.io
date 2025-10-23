@@ -64,3 +64,26 @@ from(bucket: "SOC")
   |> keep(columns: ["_time","_value","device_name"])
   |> yield(name: "RADWARE_events_per_min")
 
+
+
+
+Top 10 攻擊類型
+from(bucket: "SOC")
+  |> range(start: -24h)
+  |> filter(fn: (r) => r._measurement == "arcsight_event")
+  |> filter(fn: (r) => r._field == "count")
+  |> group(columns: ["rule_name"])
+  |> sum(column: "_value")
+  |> sort(columns: ["_value"], desc: true)
+  |> limit(n: 10)
+
+
+
+防禦設備事件佔比
+from(bucket: "SOC")
+  |> range(start: -24h)
+  |> filter(fn: (r) => r._measurement == "arcsight_event")
+  |> filter(fn: (r) => r._field == "count")
+  |> group(columns: ["device_vendor"])
+  |> sum(column: "_value")
+  |> sort(columns: ["_value"], desc: true)

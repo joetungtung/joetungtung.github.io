@@ -1,0 +1,505 @@
+D:\Joe\Develop\GrafanaInfluxdb\Autoimport>python Arcsight_Ingest.py
+[INFO] === radware === files=43 dir=downloads\Radware
+[DEBUG][columns] file=[SOC][Radware] last 5m Event_10-23-25 8-21-27 AM.csv
+['End Time', 'Start Time', 'Name', 'Device Vendor', 'Attacker Address', 'Attacker Port', 'Agent Type', 'Transport Protocol', 'Agent Severity', 'Device Action', 'Attacker Geo Location Info', 'Attacker Geo Country Name', 'Target Address', 'Target Port', 'Target Geo Location Info', 'Target Geo Country Name', 'Manager Receipt Time', 'Agent Name']
+[DEBUG][sample time] file=[SOC][Radware] last 5m Event_10-23-25 8-21-27 AM.csv, head=['Oct 23, 2025 8:19:59 AM', 'Oct 23, 2025 8:16:33 AM', 'Oct 23, 2025 8:16:33 AM']
+[WARN] parse/write failed radware: [SOC][Radware] last 5m Event_10-23-25 8-21-27 AM.csv ('NoneType' object has no attribute 'notna')
+[DEBUG][columns] file=[SOC][Radware] last 5m Event_10-23-25 8-26-27 AM.csv
+['End Time', 'Start Time', 'Name', 'Device Vendor', 'Attacker Address', 'Attacker Port', 'Agent Type', 'Transport Protocol', 'Agent Severity', 'Device Action', 'Attacker Geo Location Info', 'Attacker Geo Country Name', 'Target Address', 'Target Port', 'Target Geo Location Info', 'Target Geo Country Name', 'Manager Receipt Time', 'Agent Name']
+[DEBUG][sample time] file=[SOC][Radware] last 5m Event_10-23-25 8-26-27 AM.csv, head=['Oct 23, 2025 8:23:33 AM', 'Oct 23, 2025 8:24:44 AM', 'Oct 23, 2025 8:25:03 AM']
+[WARN] parse/write failed radware: [SOC][Radware] last 5m Event_10-23-25 8-26-27 AM.csv ('NoneType' object has no attribute 'notna')
+[DEBUG][columns] file=[SOC][Radware] last 5m Event_10-23-25 8-31-27 AM.csv
+['End Time', 'Start Time', 'Name', 'Device Vendor', 'Attacker Address', 'Attacker Port', 'Agent Type', 'Transport Protocol', 'Agent Severity', 'Device Action', 'Attacker Geo Location Info', 'Attacker Geo Country Name', 'Target Address', 'Target Port', 'Target Geo Location Info', 'Target Geo Country Name', 'Manager Receipt Time', 'Agent Name']
+[DEBUG][sample time] file=[SOC][Radware] last 5m Event_10-23-25 8-31-27 AM.csv, head=['Oct 23, 2025 8:31:18 AM', 'Oct 23, 2025 8:30:13 AM', 'Oct 23, 2025 8:27:59 AM']
+[WARN] parse/write failed radware: [SOC][Radware] last 5m Event_10-23-25 8-31-27 AM.csv ('NoneType' object has no attribute 'notna')
+[DEBUG][columns] file=[SOC][Radware] last 5m Event_10-23-25 8-36-27 AM.csv
+['End Time', 'Start Time', 'Name', 'Device Vendor', 'Attacker Address', 'Attacker Port', 'Agent Type', 'Transport Protocol', 'Agent Severity', 'Device Action', 'Attacker Geo Location Info', 'Attacker Geo Country Name', 'Target Address', 'Target Port', 'Target Geo Location Info', 'Target Geo Country Name', 'Manager Receipt Time', 'Agent Name']
+[DEBUG][sample time] file=[SOC][Radware] last 5m Event_10-23-25 8-36-27 AM.csv, head=['Oct 23, 2025 8:34:44 AM', 'Oct 23, 2025 8:32:29 AM', 'Oct 23, 2025 8:32:29 AM']
+[WARN] parse/write failed radware: [SOC][Radware] last 5m Event_10-23-25 8-36-27 AM.csv ('NoneType' object has no attribute 'notna')
+[DEBUG][columns] file=[SOC][Radware] last 5m Event_10-23-25 8-41-27 AM.csv
+['End Time', 'Start Time', 'Name', 'Device Vendor', 'Attacker Address', 'Attacker Port', 'Agent Type', 'Transport Protocol', 'Agent Severity', 'Device Action', 'Attacker Geo Location Info', 'Attacker Geo Country Name', 'Target Address', 'Target Port', 'Target Geo Location Info', 'Target Geo Country Name', 'Manager Receipt Time', 'Agent Name']
+[DEBUG][sample time] file=[SOC][Radware] last 5m Event_10-23-25 8-41-27 AM.csv, head=['Oct 23, 2025 8:37:33 AM', 'Oct 23, 2025 8:37:33 AM', 'Oct 23, 2025 8:37:33 AM']
+[WARN] parse/write failed radware: [SOC][Radware] last 5m Event_10-23-25 8-41-27 AM.csv ('NoneType' object has no attribute 'notna')
+[DEBUG][columns] file=[SOC][Radware] last 5m Event_10-23-25 8-46-27 AM.csv
+['End Time', 'Start Time', 'Name', 'Device Vendor', 'Attacker Address', 'Attacker Port', 'Agent Type', 'Transport Protocol', 'Agent Severity', 'Device Action', 'Attacker Geo Location Info', 'Attacker Geo Country Name', 'Target Address', 'Target Port', 'Target Geo Location Info', 'Target Geo Country Name', 'Manager Receipt Time', 'Agent Name']
+[DEBUG][sample time] file=[SOC][Radware] last 5m Event_10-23-25 8-46-27 AM.csv, head=['Oct 23, 2025 8:42:59 AM', 'Oct 23, 2025 8:42:59 AM', 'Oct 23, 2025 8:42:59 AM']
+[WARN] parse/write failed radware: [SOC][Radware] last 5m Event_10-23-25 8-46-27 AM.csv ('NoneType' object has no attribute 'notna')
+[DEBUG][columns] file=[SOC][Radware] last 5m Event_10-23-25 8-51-27 AM.csv
+['End Time', 'Start Time', 'Name', 'Device Vendor', 'Attacker Address', 'Attacker Port', 'Agent Type', 'Transport Protocol', 'Agent Severity', 'Device Action', 'Attacker Geo Location Info', 'Attacker Geo Country Name', 'Target Address', 'Target Port', 'Target Geo Location Info', 'Target Geo Country Name', 'Manager Receipt Time', 'Agent Name']
+[DEBUG][sample time] file=[SOC][Radware] last 5m Event_10-23-25 8-51-27 AM.csv, head=['Oct 23, 2025 8:50:29 AM', 'Oct 23, 2025 8:50:14 AM', 'Oct 23, 2025 8:50:29 AM']
+[WARN] parse/write failed radware: [SOC][Radware] last 5m Event_10-23-25 8-51-27 AM.csv ('NoneType' object has no attribute 'notna')
+[DEBUG][columns] file=[SOC][Radware] last 5m Event_10-23-25 8-56-27 AM.csv
+['End Time', 'Start Time', 'Name', 'Device Vendor', 'Attacker Address', 'Attacker Port', 'Agent Type', 'Transport Protocol', 'Agent Severity', 'Device Action', 'Attacker Geo Location Info', 'Attacker Geo Country Name', 'Target Address', 'Target Port', 'Target Geo Location Info', 'Target Geo Country Name', 'Manager Receipt Time', 'Agent Name']
+[DEBUG][sample time] file=[SOC][Radware] last 5m Event_10-23-25 8-56-27 AM.csv, head=['Oct 23, 2025 8:52:03 AM', 'Oct 23, 2025 8:54:48 AM', 'Oct 23, 2025 8:52:13 AM']
+[WARN] parse/write failed radware: [SOC][Radware] last 5m Event_10-23-25 8-56-27 AM.csv ('NoneType' object has no attribute 'notna')
+[DEBUG][columns] file=[SOC][Radware] last 5m Event_10-23-25 9-01-27 AM.csv
+['End Time', 'Start Time', 'Name', 'Device Vendor', 'Attacker Address', 'Attacker Port', 'Agent Type', 'Transport Protocol', 'Agent Severity', 'Device Action', 'Attacker Geo Location Info', 'Attacker Geo Country Name', 'Target Address', 'Target Port', 'Target Geo Location Info', 'Target Geo Country Name', 'Manager Receipt Time', 'Agent Name']
+[DEBUG][sample time] file=[SOC][Radware] last 5m Event_10-23-25 9-01-27 AM.csv, head=['Oct 23, 2025 9:00:31 AM', 'Oct 23, 2025 8:56:44 AM', 'Oct 23, 2025 8:56:44 AM']
+[WARN] parse/write failed radware: [SOC][Radware] last 5m Event_10-23-25 9-01-27 AM.csv ('NoneType' object has no attribute 'notna')
+[DEBUG][columns] file=[SOC][Radware] last 5m Event_10-23-25 9-06-27 AM.csv
+['End Time', 'Start Time', 'Name', 'Device Vendor', 'Attacker Address', 'Attacker Port', 'Agent Type', 'Transport Protocol', 'Agent Severity', 'Device Action', 'Attacker Geo Location Info', 'Attacker Geo Country Name', 'Target Address', 'Target Port', 'Target Geo Location Info', 'Target Geo Country Name', 'Manager Receipt Time', 'Agent Name']
+[DEBUG][sample time] file=[SOC][Radware] last 5m Event_10-23-25 9-06-27 AM.csv, head=['Oct 23, 2025 9:04:03 AM', 'Oct 23, 2025 9:05:46 AM', 'Oct 23, 2025 9:06:01 AM']
+[WARN] parse/write failed radware: [SOC][Radware] last 5m Event_10-23-25 9-06-27 AM.csv ('NoneType' object has no attribute 'notna')
+[DEBUG][columns] file=[SOC][Radware] last 5m Event_10-23-25 9-11-27 AM.csv
+['End Time', 'Start Time', 'Name', 'Device Vendor', 'Attacker Address', 'Attacker Port', 'Agent Type', 'Transport Protocol', 'Agent Severity', 'Device Action', 'Attacker Geo Location Info', 'Attacker Geo Country Name', 'Target Address', 'Target Port', 'Target Geo Location Info', 'Target Geo Country Name', 'Manager Receipt Time', 'Agent Name']
+[DEBUG][sample time] file=[SOC][Radware] last 5m Event_10-23-25 9-11-27 AM.csv, head=['Oct 23, 2025 9:07:48 AM', 'Oct 23, 2025 9:08:33 AM', 'Oct 23, 2025 9:09:01 AM']
+[WARN] parse/write failed radware: [SOC][Radware] last 5m Event_10-23-25 9-11-27 AM.csv ('NoneType' object has no attribute 'notna')
+[DEBUG][columns] file=[SOC][Radware] last 5m Event_10-23-25 9-16-27 AM.csv
+['End Time', 'Start Time', 'Name', 'Device Vendor', 'Attacker Address', 'Attacker Port', 'Agent Type', 'Transport Protocol', 'Agent Severity', 'Device Action', 'Attacker Geo Location Info', 'Attacker Geo Country Name', 'Target Address', 'Target Port', 'Target Geo Location Info', 'Target Geo Country Name', 'Manager Receipt Time', 'Agent Name']
+[DEBUG][sample time] file=[SOC][Radware] last 5m Event_10-23-25 9-16-27 AM.csv, head=['Oct 23, 2025 9:13:31 AM', 'Oct 23, 2025 9:15:46 AM', 'Oct 23, 2025 9:15:58 AM']
+[WARN] parse/write failed radware: [SOC][Radware] last 5m Event_10-23-25 9-16-27 AM.csv ('NoneType' object has no attribute 'notna')
+[DEBUG][columns] file=[SOC][Radware] last 5m Event_10-23-25 9-21-27 AM.csv
+['End Time', 'Start Time', 'Name', 'Device Vendor', 'Attacker Address', 'Attacker Port', 'Agent Type', 'Transport Protocol', 'Agent Severity', 'Device Action', 'Attacker Geo Location Info', 'Attacker Geo Country Name', 'Target Address', 'Target Port', 'Target Geo Location Info', 'Target Geo Country Name', 'Manager Receipt Time', 'Agent Name']
+[DEBUG][sample time] file=[SOC][Radware] last 5m Event_10-23-25 9-21-27 AM.csv, head=['Oct 23, 2025 9:17:16 AM', 'Oct 23, 2025 9:18:33 AM', 'Oct 23, 2025 9:17:46 AM']
+[WARN] parse/write failed radware: [SOC][Radware] last 5m Event_10-23-25 9-21-27 AM.csv ('NoneType' object has no attribute 'notna')
+[DEBUG][columns] file=[SOC][Radware] last 5m Event_10-23-25 9-26-27 AM.csv
+['End Time', 'Start Time', 'Name', 'Device Vendor', 'Attacker Address', 'Attacker Port', 'Agent Type', 'Transport Protocol', 'Agent Severity', 'Device Action', 'Attacker Geo Location Info', 'Attacker Geo Country Name', 'Target Address', 'Target Port', 'Target Geo Location Info', 'Target Geo Country Name', 'Manager Receipt Time', 'Agent Name']
+[DEBUG][sample time] file=[SOC][Radware] last 5m Event_10-23-25 9-26-27 AM.csv, head=['Oct 23, 2025 9:23:43 AM', 'Oct 23, 2025 9:23:18 AM', 'Oct 23, 2025 9:24:46 AM']
+[WARN] parse/write failed radware: [SOC][Radware] last 5m Event_10-23-25 9-26-27 AM.csv ('NoneType' object has no attribute 'notna')
+[DEBUG][columns] file=[SOC][Radware] last 5m Event_10-23-25 9-31-27 AM.csv
+['End Time', 'Start Time', 'Name', 'Device Vendor', 'Attacker Address', 'Attacker Port', 'Agent Type', 'Transport Protocol', 'Agent Severity', 'Device Action', 'Attacker Geo Location Info', 'Attacker Geo Country Name', 'Target Address', 'Target Port', 'Target Geo Location Info', 'Target Geo Country Name', 'Manager Receipt Time', 'Agent Name']
+[DEBUG][sample time] file=[SOC][Radware] last 5m Event_10-23-25 9-31-27 AM.csv, head=['Oct 23, 2025 9:29:48 AM', 'Oct 23, 2025 9:26:43 AM', 'Oct 23, 2025 9:26:46 AM']
+[WARN] parse/write failed radware: [SOC][Radware] last 5m Event_10-23-25 9-31-27 AM.csv ('NoneType' object has no attribute 'notna')
+[DEBUG][columns] file=[SOC][Radware] last 5m Event_10-23-25 9-36-27 AM.csv
+['End Time', 'Start Time', 'Name', 'Device Vendor', 'Attacker Address', 'Attacker Port', 'Agent Type', 'Transport Protocol', 'Agent Severity', 'Device Action', 'Attacker Geo Location Info', 'Attacker Geo Country Name', 'Target Address', 'Target Port', 'Target Geo Location Info', 'Target Geo Country Name', 'Manager Receipt Time', 'Agent Name']
+[DEBUG][sample time] file=[SOC][Radware] last 5m Event_10-23-25 9-36-27 AM.csv, head=['Oct 23, 2025 9:32:16 AM', 'Oct 23, 2025 9:34:33 AM', 'Oct 23, 2025 9:32:16 AM']
+[WARN] parse/write failed radware: [SOC][Radware] last 5m Event_10-23-25 9-36-27 AM.csv ('NoneType' object has no attribute 'notna')
+[DEBUG][columns] file=[SOC][Radware] last 5m Event_10-23-25 9-41-27 AM.csv
+['End Time', 'Start Time', 'Name', 'Device Vendor', 'Attacker Address', 'Attacker Port', 'Agent Type', 'Transport Protocol', 'Agent Severity', 'Device Action', 'Attacker Geo Location Info', 'Attacker Geo Country Name', 'Target Address', 'Target Port', 'Target Geo Location Info', 'Target Geo Country Name', 'Manager Receipt Time', 'Agent Name']
+[DEBUG][sample time] file=[SOC][Radware] last 5m Event_10-23-25 9-41-27 AM.csv, head=['Oct 23, 2025 9:39:58 AM', 'Oct 23, 2025 9:36:43 AM', 'Oct 23, 2025 9:37:28 AM']
+[WARN] parse/write failed radware: [SOC][Radware] last 5m Event_10-23-25 9-41-27 AM.csv ('NoneType' object has no attribute 'notna')
+[DEBUG][columns] file=[SOC][Radware] last 5m Event_10-23-25 9-46-27 AM.csv
+['End Time', 'Start Time', 'Name', 'Device Vendor', 'Attacker Address', 'Attacker Port', 'Agent Type', 'Transport Protocol', 'Agent Severity', 'Device Action', 'Attacker Geo Location Info', 'Attacker Geo Country Name', 'Target Address', 'Target Port', 'Target Geo Location Info', 'Target Geo Country Name', 'Manager Receipt Time', 'Agent Name']
+[DEBUG][sample time] file=[SOC][Radware] last 5m Event_10-23-25 9-46-27 AM.csv, head=['Oct 23, 2025 9:45:13 AM', 'Oct 23, 2025 9:46:03 AM', 'Oct 23, 2025 9:46:13 AM']
+[WARN] parse/write failed radware: [SOC][Radware] last 5m Event_10-23-25 9-46-27 AM.csv ('NoneType' object has no attribute 'notna')
+[DEBUG][columns] file=[SOC][Radware] last 5m Event_10-23-25 9-51-27 AM.csv
+['End Time', 'Start Time', 'Name', 'Device Vendor', 'Attacker Address', 'Attacker Port', 'Agent Type', 'Transport Protocol', 'Agent Severity', 'Device Action', 'Attacker Geo Location Info', 'Attacker Geo Country Name', 'Target Address', 'Target Port', 'Target Geo Location Info', 'Target Geo Country Name', 'Manager Receipt Time', 'Agent Name']
+[DEBUG][sample time] file=[SOC][Radware] last 5m Event_10-23-25 9-51-27 AM.csv, head=['Oct 23, 2025 9:47:43 AM', 'Oct 23, 2025 9:47:43 AM', 'Oct 23, 2025 9:48:03 AM']
+[WARN] parse/write failed radware: [SOC][Radware] last 5m Event_10-23-25 9-51-27 AM.csv ('NoneType' object has no attribute 'notna')
+[DEBUG][columns] file=[SOC][Radware] last 5m Event_10-23-25 9-56-27 AM.csv
+['End Time', 'Start Time', 'Name', 'Device Vendor', 'Attacker Address', 'Attacker Port', 'Agent Type', 'Transport Protocol', 'Agent Severity', 'Device Action', 'Attacker Geo Location Info', 'Attacker Geo Country Name', 'Target Address', 'Target Port', 'Target Geo Location Info', 'Target Geo Country Name', 'Manager Receipt Time', 'Agent Name']
+[DEBUG][sample time] file=[SOC][Radware] last 5m Event_10-23-25 9-56-27 AM.csv, head=['Oct 23, 2025 9:51:43 AM', 'Oct 23, 2025 9:55:58 AM', 'Oct 23, 2025 9:55:58 AM']
+[WARN] parse/write failed radware: [SOC][Radware] last 5m Event_10-23-25 9-56-27 AM.csv ('NoneType' object has no attribute 'notna')
+[DEBUG][columns] file=[SOC][Radware] last 5m Event_10-23-25 10-01-27 AM.csv
+['End Time', 'Start Time', 'Name', 'Device Vendor', 'Attacker Address', 'Attacker Port', 'Agent Type', 'Transport Protocol', 'Agent Severity', 'Device Action', 'Attacker Geo Location Info', 'Attacker Geo Country Name', 'Target Address', 'Target Port', 'Target Geo Location Info', 'Target Geo Country Name', 'Manager Receipt Time', 'Agent Name']
+[DEBUG][sample time] file=[SOC][Radware] last 5m Event_10-23-25 10-01-27 AM.csv, head=['Oct 23, 2025 10:00:28 AM', 'Oct 23, 2025 9:56:58 AM', 'Oct 23, 2025 9:57:13 AM']
+[WARN] parse/write failed radware: [SOC][Radware] last 5m Event_10-23-25 10-01-27 AM.csv ('NoneType' object has no attribute 'notna')
+[DEBUG][columns] file=[SOC][Radware] last 5m Event_10-23-25 10-06-27 AM.csv
+['End Time', 'Start Time', 'Name', 'Device Vendor', 'Attacker Address', 'Attacker Port', 'Agent Type', 'Transport Protocol', 'Agent Severity', 'Device Action', 'Attacker Geo Location Info', 'Attacker Geo Country Name', 'Target Address', 'Target Port', 'Target Geo Location Info', 'Target Geo Country Name', 'Manager Receipt Time', 'Agent Name']
+[DEBUG][sample time] file=[SOC][Radware] last 5m Event_10-23-25 10-06-27 AM.csv, head=['Oct 23, 2025 10:03:28 AM', 'Oct 23, 2025 10:03:18 AM', 'Oct 23, 2025 10:01:43 AM']
+[WARN] parse/write failed radware: [SOC][Radware] last 5m Event_10-23-25 10-06-27 AM.csv ('NoneType' object has no attribute 'notna')
+[DEBUG][columns] file=[SOC][Radware] last 5m Event_10-23-25 10-11-27 AM.csv
+['End Time', 'Start Time', 'Name', 'Device Vendor', 'Attacker Address', 'Attacker Port', 'Agent Type', 'Transport Protocol', 'Agent Severity', 'Device Action', 'Attacker Geo Location Info', 'Attacker Geo Country Name', 'Target Address', 'Target Port', 'Target Geo Location Info', 'Target Geo Country Name', 'Manager Receipt Time', 'Agent Name']
+[DEBUG][sample time] file=[SOC][Radware] last 5m Event_10-23-25 10-11-27 AM.csv, head=['Oct 23, 2025 10:07:58 AM', 'Oct 23, 2025 10:07:28 AM', 'Oct 23, 2025 10:07:28 AM']
+[WARN] parse/write failed radware: [SOC][Radware] last 5m Event_10-23-25 10-11-27 AM.csv ('NoneType' object has no attribute 'notna')
+[DEBUG][columns] file=[SOC][Radware] last 5m Event_10-23-25 10-16-27 AM.csv
+['End Time', 'Start Time', 'Name', 'Device Vendor', 'Attacker Address', 'Attacker Port', 'Agent Type', 'Transport Protocol', 'Agent Severity', 'Device Action', 'Attacker Geo Location Info', 'Attacker Geo Country Name', 'Target Address', 'Target Port', 'Target Geo Location Info', 'Target Geo Country Name', 'Manager Receipt Time', 'Agent Name']
+[DEBUG][sample time] file=[SOC][Radware] last 5m Event_10-23-25 10-16-27 AM.csv, head=['Oct 23, 2025 10:15:58 AM', 'Oct 23, 2025 10:12:13 AM', 'Oct 23, 2025 10:13:28 AM']
+[WARN] parse/write failed radware: [SOC][Radware] last 5m Event_10-23-25 10-16-27 AM.csv ('NoneType' object has no attribute 'notna')
+[DEBUG][columns] file=[SOC][Radware] last 5m Event_10-23-25 10-21-27 AM.csv
+['End Time', 'Start Time', 'Name', 'Device Vendor', 'Attacker Address', 'Attacker Port', 'Agent Type', 'Transport Protocol', 'Agent Severity', 'Device Action', 'Attacker Geo Location Info', 'Attacker Geo Country Name', 'Target Address', 'Target Port', 'Target Geo Location Info', 'Target Geo Country Name', 'Manager Receipt Time', 'Agent Name']
+[DEBUG][sample time] file=[SOC][Radware] last 5m Event_10-23-25 10-21-27 AM.csv, head=['Oct 23, 2025 10:18:13 AM', 'Oct 23, 2025 10:18:13 AM', 'Oct 23, 2025 10:18:13 AM']
+[WARN] parse/write failed radware: [SOC][Radware] last 5m Event_10-23-25 10-21-27 AM.csv ('NoneType' object has no attribute 'notna')
+[DEBUG][columns] file=[SOC][Radware] last 5m Event_10-23-25 10-26-27 AM.csv
+['End Time', 'Start Time', 'Name', 'Device Vendor', 'Attacker Address', 'Attacker Port', 'Agent Type', 'Transport Protocol', 'Agent Severity', 'Device Action', 'Attacker Geo Location Info', 'Attacker Geo Country Name', 'Target Address', 'Target Port', 'Target Geo Location Info', 'Target Geo Country Name', 'Manager Receipt Time', 'Agent Name']
+[DEBUG][sample time] file=[SOC][Radware] last 5m Event_10-23-25 10-26-27 AM.csv, head=['Oct 23, 2025 10:22:13 AM', 'Oct 23, 2025 10:21:58 AM', 'Oct 23, 2025 10:22:58 AM']
+[WARN] parse/write failed radware: [SOC][Radware] last 5m Event_10-23-25 10-26-27 AM.csv ('NoneType' object has no attribute 'notna')
+[DEBUG][columns] file=[SOC][Radware] last 5m Event_10-23-25 10-31-27 AM.csv
+['End Time', 'Start Time', 'Name', 'Device Vendor', 'Attacker Address', 'Attacker Port', 'Agent Type', 'Transport Protocol', 'Agent Severity', 'Device Action', 'Attacker Geo Location Info', 'Attacker Geo Country Name', 'Target Address', 'Target Port', 'Target Geo Location Info', 'Target Geo Country Name', 'Manager Receipt Time', 'Agent Name']
+[DEBUG][sample time] file=[SOC][Radware] last 5m Event_10-23-25 10-31-27 AM.csv, head=['Oct 23, 2025 10:26:58 AM', 'Oct 23, 2025 10:27:34 AM', 'Oct 23, 2025 10:27:34 AM']
+[WARN] parse/write failed radware: [SOC][Radware] last 5m Event_10-23-25 10-31-27 AM.csv ('NoneType' object has no attribute 'notna')
+[DEBUG][columns] file=[SOC][Radware] last 5m Event_10-23-25 10-36-27 AM.csv
+['End Time', 'Start Time', 'Name', 'Device Vendor', 'Attacker Address', 'Attacker Port', 'Agent Type', 'Transport Protocol', 'Agent Severity', 'Device Action', 'Attacker Geo Location Info', 'Attacker Geo Country Name', 'Target Address', 'Target Port', 'Target Geo Location Info', 'Target Geo Country Name', 'Manager Receipt Time', 'Agent Name']
+[DEBUG][sample time] file=[SOC][Radware] last 5m Event_10-23-25 10-36-27 AM.csv, head=['Oct 23, 2025 10:32:04 AM', 'Oct 23, 2025 10:35:34 AM', 'Oct 23, 2025 10:31:34 AM']
+[WARN] parse/write failed radware: [SOC][Radware] last 5m Event_10-23-25 10-36-27 AM.csv ('NoneType' object has no attribute 'notna')
+[DEBUG][columns] file=[SOC][Radware] last 5m Event_10-23-25 10-41-27 AM.csv
+['End Time', 'Start Time', 'Name', 'Device Vendor', 'Attacker Address', 'Attacker Port', 'Agent Type', 'Transport Protocol', 'Agent Severity', 'Device Action', 'Attacker Geo Location Info', 'Attacker Geo Country Name', 'Target Address', 'Target Port', 'Target Geo Location Info', 'Target Geo Country Name', 'Manager Receipt Time', 'Agent Name']
+[DEBUG][sample time] file=[SOC][Radware] last 5m Event_10-23-25 10-41-27 AM.csv, head=['Oct 23, 2025 10:38:49 AM', 'Oct 23, 2025 10:38:04 AM', 'Oct 23, 2025 10:37:19 AM']
+[WARN] parse/write failed radware: [SOC][Radware] last 5m Event_10-23-25 10-41-27 AM.csv ('NoneType' object has no attribute 'notna')
+[DEBUG][columns] file=[SOC][Radware] last 5m Event_10-23-25 10-46-27 AM.csv
+['End Time', 'Start Time', 'Name', 'Device Vendor', 'Attacker Address', 'Attacker Port', 'Agent Type', 'Transport Protocol', 'Agent Severity', 'Device Action', 'Attacker Geo Location Info', 'Attacker Geo Country Name', 'Target Address', 'Target Port', 'Target Geo Location Info', 'Target Geo Country Name', 'Manager Receipt Time', 'Agent Name']
+[DEBUG][sample time] file=[SOC][Radware] last 5m Event_10-23-25 10-46-27 AM.csv, head=['Oct 23, 2025 10:42:03 AM', 'Oct 23, 2025 10:42:19 AM', 'Oct 23, 2025 10:42:19 AM']
+[WARN] parse/write failed radware: [SOC][Radware] last 5m Event_10-23-25 10-46-27 AM.csv ('NoneType' object has no attribute 'notna')
+[DEBUG][columns] file=[SOC][Radware] last 5m Event_10-23-25 10-51-27 AM.csv
+['End Time', 'Start Time', 'Name', 'Device Vendor', 'Attacker Address', 'Attacker Port', 'Agent Type', 'Transport Protocol', 'Agent Severity', 'Device Action', 'Attacker Geo Location Info', 'Attacker Geo Country Name', 'Target Address', 'Target Port', 'Target Geo Location Info', 'Target Geo Country Name', 'Manager Receipt Time', 'Agent Name']
+[DEBUG][sample time] file=[SOC][Radware] last 5m Event_10-23-25 10-51-27 AM.csv, head=['Oct 23, 2025 10:47:48 AM', 'Oct 23, 2025 10:46:34 AM', 'Oct 23, 2025 10:49:19 AM']
+[WARN] parse/write failed radware: [SOC][Radware] last 5m Event_10-23-25 10-51-27 AM.csv ('NoneType' object has no attribute 'notna')
+[DEBUG][columns] file=[SOC][Radware] last 5m Event_10-23-25 10-56-27 AM.csv
+['End Time', 'Start Time', 'Name', 'Device Vendor', 'Attacker Address', 'Attacker Port', 'Agent Type', 'Transport Protocol', 'Agent Severity', 'Device Action', 'Attacker Geo Location Info', 'Attacker Geo Country Name', 'Target Address', 'Target Port', 'Target Geo Location Info', 'Target Geo Country Name', 'Manager Receipt Time', 'Agent Name']
+[DEBUG][sample time] file=[SOC][Radware] last 5m Event_10-23-25 10-56-27 AM.csv, head=['Oct 23, 2025 10:55:18 AM', 'Oct 23, 2025 10:53:19 AM', 'Oct 23, 2025 10:51:49 AM']
+[WARN] parse/write failed radware: [SOC][Radware] last 5m Event_10-23-25 10-56-27 AM.csv ('NoneType' object has no attribute 'notna')
+[DEBUG][columns] file=[SOC][Radware] last 5m Event_10-23-25 11-01-27 AM.csv
+['End Time', 'Start Time', 'Name', 'Device Vendor', 'Attacker Address', 'Attacker Port', 'Agent Type', 'Transport Protocol', 'Agent Severity', 'Device Action', 'Attacker Geo Location Info', 'Attacker Geo Country Name', 'Target Address', 'Target Port', 'Target Geo Location Info', 'Target Geo Country Name', 'Manager Receipt Time', 'Agent Name']
+[DEBUG][sample time] file=[SOC][Radware] last 5m Event_10-23-25 11-01-27 AM.csv, head=['Oct 23, 2025 10:58:19 AM', 'Oct 23, 2025 11:00:18 AM', 'Oct 23, 2025 10:57:58 AM']
+[WARN] parse/write failed radware: [SOC][Radware] last 5m Event_10-23-25 11-01-27 AM.csv ('NoneType' object has no attribute 'notna')
+[DEBUG][columns] file=[SOC][Radware] last 5m Event_10-23-25 11-06-27 AM.csv
+['End Time', 'Start Time', 'Name', 'Device Vendor', 'Attacker Address', 'Attacker Port', 'Agent Type', 'Transport Protocol', 'Agent Severity', 'Device Action', 'Attacker Geo Location Info', 'Attacker Geo Country Name', 'Target Address', 'Target Port', 'Target Geo Location Info', 'Target Geo Country Name', 'Manager Receipt Time', 'Agent Name']
+[DEBUG][sample time] file=[SOC][Radware] last 5m Event_10-23-25 11-06-27 AM.csv, head=['Oct 23, 2025 11:02:33 AM', 'Oct 23, 2025 11:02:33 AM', 'Oct 23, 2025 11:02:19 AM']
+[WARN] parse/write failed radware: [SOC][Radware] last 5m Event_10-23-25 11-06-27 AM.csv ('NoneType' object has no attribute 'notna')
+[DEBUG][columns] file=[SOC][Radware] last 5m Event_10-23-25 11-11-27 AM.csv
+['End Time', 'Start Time', 'Name', 'Device Vendor', 'Attacker Address', 'Attacker Port', 'Agent Type', 'Transport Protocol', 'Agent Severity', 'Device Action', 'Attacker Geo Location Info', 'Attacker Geo Country Name', 'Target Address', 'Target Port', 'Target Geo Location Info', 'Target Geo Country Name', 'Manager Receipt Time', 'Agent Name']
+[DEBUG][sample time] file=[SOC][Radware] last 5m Event_10-23-25 11-11-27 AM.csv, head=['Oct 23, 2025 11:11:19 AM', 'Oct 23, 2025 11:11:18 AM', 'Oct 23, 2025 11:10:04 AM']
+[WARN] parse/write failed radware: [SOC][Radware] last 5m Event_10-23-25 11-11-27 AM.csv ('NoneType' object has no attribute 'notna')
+[DEBUG][columns] file=[SOC][Radware] last 5m Event_10-23-25 11-16-27 AM.csv
+['End Time', 'Start Time', 'Name', 'Device Vendor', 'Attacker Address', 'Attacker Port', 'Agent Type', 'Transport Protocol', 'Agent Severity', 'Device Action', 'Attacker Geo Location Info', 'Attacker Geo Country Name', 'Target Address', 'Target Port', 'Target Geo Location Info', 'Target Geo Country Name', 'Manager Receipt Time', 'Agent Name']
+[DEBUG][sample time] file=[SOC][Radware] last 5m Event_10-23-25 11-16-27 AM.csv, head=['Oct 23, 2025 11:13:34 AM', 'Oct 23, 2025 11:13:19 AM', 'Oct 23, 2025 11:13:19 AM']
+[WARN] parse/write failed radware: [SOC][Radware] last 5m Event_10-23-25 11-16-27 AM.csv ('NoneType' object has no attribute 'notna')
+[DEBUG][columns] file=[SOC][Radware] last 5m Event_10-23-25 11-21-27 AM.csv
+['End Time', 'Start Time', 'Name', 'Device Vendor', 'Attacker Address', 'Attacker Port', 'Agent Type', 'Transport Protocol', 'Agent Severity', 'Device Action', 'Attacker Geo Location Info', 'Attacker Geo Country Name', 'Target Address', 'Target Port', 'Target Geo Location Info', 'Target Geo Country Name', 'Manager Receipt Time', 'Agent Name']
+[DEBUG][sample time] file=[SOC][Radware] last 5m Event_10-23-25 11-21-27 AM.csv, head=['Oct 23, 2025 11:17:18 AM', 'Oct 23, 2025 11:19:48 AM', 'Oct 23, 2025 11:19:49 AM']
+[WARN] parse/write failed radware: [SOC][Radware] last 5m Event_10-23-25 11-21-27 AM.csv ('NoneType' object has no attribute 'notna')
+[DEBUG][columns] file=[SOC][Radware] last 5m Event_10-23-25 11-26-27 AM.csv
+['End Time', 'Start Time', 'Name', 'Device Vendor', 'Attacker Address', 'Attacker Port', 'Agent Type', 'Transport Protocol', 'Agent Severity', 'Device Action', 'Attacker Geo Location Info', 'Attacker Geo Country Name', 'Target Address', 'Target Port', 'Target Geo Location Info', 'Target Geo Country Name', 'Manager Receipt Time', 'Agent Name']
+[DEBUG][sample time] file=[SOC][Radware] last 5m Event_10-23-25 11-26-27 AM.csv, head=['Oct 23, 2025 11:24:34 AM', 'Oct 23, 2025 11:21:34 AM', 'Oct 23, 2025 11:23:19 AM']
+[WARN] parse/write failed radware: [SOC][Radware] last 5m Event_10-23-25 11-26-27 AM.csv ('NoneType' object has no attribute 'notna')
+[DEBUG][columns] file=[SOC][Radware] last 5m Event_10-23-25 11-31-27 AM.csv
+['End Time', 'Start Time', 'Name', 'Device Vendor', 'Attacker Address', 'Attacker Port', 'Agent Type', 'Transport Protocol', 'Agent Severity', 'Device Action', 'Attacker Geo Location Info', 'Attacker Geo Country Name', 'Target Address', 'Target Port', 'Target Geo Location Info', 'Target Geo Country Name', 'Manager Receipt Time', 'Agent Name']
+[DEBUG][sample time] file=[SOC][Radware] last 5m Event_10-23-25 11-31-27 AM.csv, head=['Oct 23, 2025 11:27:19 AM', 'Oct 23, 2025 11:26:49 AM', 'Oct 23, 2025 11:30:19 AM']
+[WARN] parse/write failed radware: [SOC][Radware] last 5m Event_10-23-25 11-31-27 AM.csv ('NoneType' object has no attribute 'notna')
+[DEBUG][columns] file=[SOC][Radware] last 5m Event_10-23-25 11-36-27 AM.csv
+['End Time', 'Start Time', 'Name', 'Device Vendor', 'Attacker Address', 'Attacker Port', 'Agent Type', 'Transport Protocol', 'Agent Severity', 'Device Action', 'Attacker Geo Location Info', 'Attacker Geo Country Name', 'Target Address', 'Target Port', 'Target Geo Location Info', 'Target Geo Country Name', 'Manager Receipt Time', 'Agent Name']
+[DEBUG][sample time] file=[SOC][Radware] last 5m Event_10-23-25 11-36-27 AM.csv, head=['Oct 23, 2025 11:35:04 AM', 'Oct 23, 2025 11:32:49 AM', 'Oct 23, 2025 11:32:49 AM']
+[WARN] parse/write failed radware: [SOC][Radware] last 5m Event_10-23-25 11-36-27 AM.csv ('NoneType' object has no attribute 'notna')
+[DEBUG][columns] file=[SOC][Radware] last 5m Event_10-23-25 11-41-27 AM.csv
+['End Time', 'Start Time', 'Name', 'Device Vendor', 'Attacker Address', 'Attacker Port', 'Agent Type', 'Transport Protocol', 'Agent Severity', 'Device Action', 'Attacker Geo Location Info', 'Attacker Geo Country Name', 'Target Address', 'Target Port', 'Target Geo Location Info', 'Target Geo Country Name', 'Manager Receipt Time', 'Agent Name']
+[DEBUG][sample time] file=[SOC][Radware] last 5m Event_10-23-25 11-41-27 AM.csv, head=['Oct 23, 2025 11:39:34 AM', 'Oct 23, 2025 11:37:04 AM', 'Oct 23, 2025 11:37:49 AM']
+[WARN] parse/write failed radware: [SOC][Radware] last 5m Event_10-23-25 11-41-27 AM.csv ('NoneType' object has no attribute 'notna')
+[DEBUG][columns] file=[SOC][Radware] last 5m Event_10-23-25 11-46-27 AM.csv
+['End Time', 'Start Time', 'Name', 'Device Vendor', 'Attacker Address', 'Attacker Port', 'Agent Type', 'Transport Protocol', 'Agent Severity', 'Device Action', 'Attacker Geo Location Info', 'Attacker Geo Country Name', 'Target Address', 'Target Port', 'Target Geo Location Info', 'Target Geo Country Name', 'Manager Receipt Time', 'Agent Name']
+[DEBUG][sample time] file=[SOC][Radware] last 5m Event_10-23-25 11-46-27 AM.csv, head=['Oct 23, 2025 11:42:04 AM', 'Oct 23, 2025 11:42:04 AM', 'Oct 23, 2025 11:42:04 AM']
+[WARN] parse/write failed radware: [SOC][Radware] last 5m Event_10-23-25 11-46-27 AM.csv ('NoneType' object has no attribute 'notna')
+[DEBUG][columns] file=[SOC][Radware] last 5m Event_10-23-25 11-51-27 AM.csv
+['End Time', 'Start Time', 'Name', 'Device Vendor', 'Attacker Address', 'Attacker Port', 'Agent Type', 'Transport Protocol', 'Agent Severity', 'Device Action', 'Attacker Geo Location Info', 'Attacker Geo Country Name', 'Target Address', 'Target Port', 'Target Geo Location Info', 'Target Geo Country Name', 'Manager Receipt Time', 'Agent Name']
+[DEBUG][sample time] file=[SOC][Radware] last 5m Event_10-23-25 11-51-27 AM.csv, head=['Oct 23, 2025 11:47:49 AM', 'Oct 23, 2025 11:48:48 AM', 'Oct 23, 2025 11:51:04 AM']
+[WARN] parse/write failed radware: [SOC][Radware] last 5m Event_10-23-25 11-51-27 AM.csv ('NoneType' object has no attribute 'notna')
+[INFO] === fw === files=42 dir=downloads\FW
+[DEBUG][columns] file=[SOC][FW] last 5m Event_10-23-25 8-23-07 AM.csv
+['End Time', 'Start Time', 'Name', 'Attacker Address', 'Agent Type', 'Attacker Port', 'Target Port', 'Transport Protocol', 'Agent Severity', 'Device Action', 'Device Inbound Interface', 'Device Outbound Interface', 'Target Address', 'Application Protocol', 'Bytes In', 'Bytes Out', 'Device Host Name', 'Agent Name', 'Device Vendor', 'Flex Number1']
+[DEBUG][sample time] file=[SOC][FW] last 5m Event_10-23-25 8-23-07 AM.csv, head=['Oct 23, 2025 8:18:11 AM', 'Oct 23, 2025 8:18:11 AM', 'Oct 23, 2025 8:18:11 AM']
+[WARN] parse/write failed fw: [SOC][FW] last 5m Event_10-23-25 8-23-07 AM.csv ('NoneType' object has no attribute 'notna')
+[DEBUG][columns] file=[SOC][FW] last 5m Event_10-23-25 8-28-07 AM.csv
+['End Time', 'Start Time', 'Name', 'Attacker Address', 'Agent Type', 'Attacker Port', 'Target Port', 'Transport Protocol', 'Agent Severity', 'Device Action', 'Device Inbound Interface', 'Device Outbound Interface', 'Target Address', 'Application Protocol', 'Bytes In', 'Bytes Out', 'Device Host Name', 'Agent Name', 'Device Vendor', 'Flex Number1']
+[DEBUG][sample time] file=[SOC][FW] last 5m Event_10-23-25 8-28-07 AM.csv, head=['Oct 23, 2025 8:23:13 AM', 'Oct 23, 2025 8:23:13 AM', 'Oct 23, 2025 8:23:13 AM']
+[WARN] parse/write failed fw: [SOC][FW] last 5m Event_10-23-25 8-28-07 AM.csv ('NoneType' object has no attribute 'notna')
+[DEBUG][columns] file=[SOC][FW] last 5m Event_10-23-25 8-33-07 AM.csv
+['End Time', 'Start Time', 'Name', 'Attacker Address', 'Agent Type', 'Attacker Port', 'Target Port', 'Transport Protocol', 'Agent Severity', 'Device Action', 'Device Inbound Interface', 'Device Outbound Interface', 'Target Address', 'Application Protocol', 'Bytes In', 'Bytes Out', 'Device Host Name', 'Agent Name', 'Device Vendor', 'Flex Number1']
+[DEBUG][sample time] file=[SOC][FW] last 5m Event_10-23-25 8-33-07 AM.csv, head=['Oct 23, 2025 8:28:12 AM', 'Oct 23, 2025 8:28:12 AM', 'Oct 23, 2025 8:28:12 AM']
+[WARN] parse/write failed fw: [SOC][FW] last 5m Event_10-23-25 8-33-07 AM.csv ('NoneType' object has no attribute 'notna')
+[DEBUG][columns] file=[SOC][FW] last 5m Event_10-23-25 8-38-07 AM.csv
+['End Time', 'Start Time', 'Name', 'Attacker Address', 'Agent Type', 'Attacker Port', 'Target Port', 'Transport Protocol', 'Agent Severity', 'Device Action', 'Device Inbound Interface', 'Device Outbound Interface', 'Target Address', 'Application Protocol', 'Bytes In', 'Bytes Out', 'Device Host Name', 'Agent Name', 'Device Vendor', 'Flex Number1']
+[DEBUG][sample time] file=[SOC][FW] last 5m Event_10-23-25 8-38-07 AM.csv, head=['Oct 23, 2025 8:33:19 AM', 'Oct 23, 2025 8:33:19 AM', 'Oct 23, 2025 8:33:19 AM']
+[WARN] parse/write failed fw: [SOC][FW] last 5m Event_10-23-25 8-38-07 AM.csv ('NoneType' object has no attribute 'notna')
+[DEBUG][columns] file=[SOC][FW] last 5m Event_10-23-25 8-43-07 AM.csv
+['End Time', 'Start Time', 'Name', 'Attacker Address', 'Agent Type', 'Attacker Port', 'Target Port', 'Transport Protocol', 'Agent Severity', 'Device Action', 'Device Inbound Interface', 'Device Outbound Interface', 'Target Address', 'Application Protocol', 'Bytes In', 'Bytes Out', 'Device Host Name', 'Agent Name', 'Device Vendor', 'Flex Number1']
+[DEBUG][sample time] file=[SOC][FW] last 5m Event_10-23-25 8-43-07 AM.csv, head=['Oct 23, 2025 8:38:19 AM', 'Oct 23, 2025 8:38:19 AM', 'Oct 23, 2025 8:38:19 AM']
+[WARN] parse/write failed fw: [SOC][FW] last 5m Event_10-23-25 8-43-07 AM.csv ('NoneType' object has no attribute 'notna')
+[DEBUG][columns] file=[SOC][FW] last 5m Event_10-23-25 8-48-07 AM.csv
+['End Time', 'Start Time', 'Name', 'Attacker Address', 'Agent Type', 'Attacker Port', 'Target Port', 'Transport Protocol', 'Agent Severity', 'Device Action', 'Device Inbound Interface', 'Device Outbound Interface', 'Target Address', 'Application Protocol', 'Bytes In', 'Bytes Out', 'Device Host Name', 'Agent Name', 'Device Vendor', 'Flex Number1']
+[DEBUG][sample time] file=[SOC][FW] last 5m Event_10-23-25 8-48-07 AM.csv, head=['Oct 23, 2025 8:43:18 AM', 'Oct 23, 2025 8:43:18 AM', 'Oct 23, 2025 8:43:18 AM']
+[WARN] parse/write failed fw: [SOC][FW] last 5m Event_10-23-25 8-48-07 AM.csv ('NoneType' object has no attribute 'notna')
+[DEBUG][columns] file=[SOC][FW] last 5m Event_10-23-25 8-53-07 AM.csv
+['End Time', 'Start Time', 'Name', 'Attacker Address', 'Agent Type', 'Attacker Port', 'Target Port', 'Transport Protocol', 'Agent Severity', 'Device Action', 'Device Inbound Interface', 'Device Outbound Interface', 'Target Address', 'Application Protocol', 'Bytes In', 'Bytes Out', 'Device Host Name', 'Agent Name', 'Device Vendor', 'Flex Number1']
+[DEBUG][sample time] file=[SOC][FW] last 5m Event_10-23-25 8-53-07 AM.csv, head=['Oct 23, 2025 8:48:17 AM', 'Oct 23, 2025 8:48:17 AM', 'Oct 23, 2025 8:48:17 AM']
+[WARN] parse/write failed fw: [SOC][FW] last 5m Event_10-23-25 8-53-07 AM.csv ('NoneType' object has no attribute 'notna')
+[DEBUG][columns] file=[SOC][FW] last 5m Event_10-23-25 8-58-07 AM.csv
+['End Time', 'Start Time', 'Name', 'Attacker Address', 'Agent Type', 'Attacker Port', 'Target Port', 'Transport Protocol', 'Agent Severity', 'Device Action', 'Device Inbound Interface', 'Device Outbound Interface', 'Target Address', 'Application Protocol', 'Bytes In', 'Bytes Out', 'Device Host Name', 'Agent Name', 'Device Vendor', 'Flex Number1']
+[DEBUG][sample time] file=[SOC][FW] last 5m Event_10-23-25 8-58-07 AM.csv, head=['Oct 23, 2025 8:53:18 AM', 'Oct 23, 2025 8:53:18 AM', 'Oct 23, 2025 8:53:18 AM']
+[WARN] parse/write failed fw: [SOC][FW] last 5m Event_10-23-25 8-58-07 AM.csv ('NoneType' object has no attribute 'notna')
+[DEBUG][columns] file=[SOC][FW] last 5m Event_10-23-25 9-03-07 AM.csv
+['End Time', 'Start Time', 'Name', 'Attacker Address', 'Agent Type', 'Attacker Port', 'Target Port', 'Transport Protocol', 'Agent Severity', 'Device Action', 'Device Inbound Interface', 'Device Outbound Interface', 'Target Address', 'Application Protocol', 'Bytes In', 'Bytes Out', 'Device Host Name', 'Agent Name', 'Device Vendor', 'Flex Number1']
+[DEBUG][sample time] file=[SOC][FW] last 5m Event_10-23-25 9-03-07 AM.csv, head=['Oct 23, 2025 8:58:18 AM', 'Oct 23, 2025 8:58:18 AM', 'Oct 23, 2025 8:58:18 AM']
+[WARN] parse/write failed fw: [SOC][FW] last 5m Event_10-23-25 9-03-07 AM.csv ('NoneType' object has no attribute 'notna')
+[DEBUG][columns] file=[SOC][FW] last 5m Event_10-23-25 9-08-07 AM.csv
+['End Time', 'Start Time', 'Name', 'Attacker Address', 'Agent Type', 'Attacker Port', 'Target Port', 'Transport Protocol', 'Agent Severity', 'Device Action', 'Device Inbound Interface', 'Device Outbound Interface', 'Target Address', 'Application Protocol', 'Bytes In', 'Bytes Out', 'Device Host Name', 'Agent Name', 'Device Vendor', 'Flex Number1']
+[DEBUG][sample time] file=[SOC][FW] last 5m Event_10-23-25 9-08-07 AM.csv, head=['Oct 23, 2025 9:03:17 AM', 'Oct 23, 2025 9:03:17 AM', 'Oct 23, 2025 9:03:17 AM']
+[WARN] parse/write failed fw: [SOC][FW] last 5m Event_10-23-25 9-08-07 AM.csv ('NoneType' object has no attribute 'notna')
+[DEBUG][columns] file=[SOC][FW] last 5m Event_10-23-25 9-13-07 AM.csv
+['End Time', 'Start Time', 'Name', 'Attacker Address', 'Agent Type', 'Attacker Port', 'Target Port', 'Transport Protocol', 'Agent Severity', 'Device Action', 'Device Inbound Interface', 'Device Outbound Interface', 'Target Address', 'Application Protocol', 'Bytes In', 'Bytes Out', 'Device Host Name', 'Agent Name', 'Device Vendor', 'Flex Number1']
+[DEBUG][sample time] file=[SOC][FW] last 5m Event_10-23-25 9-13-07 AM.csv, head=['Oct 23, 2025 9:08:18 AM', 'Oct 23, 2025 9:08:18 AM', 'Oct 23, 2025 9:08:18 AM']
+[WARN] parse/write failed fw: [SOC][FW] last 5m Event_10-23-25 9-13-07 AM.csv ('NoneType' object has no attribute 'notna')
+[DEBUG][columns] file=[SOC][FW] last 5m Event_10-23-25 9-18-07 AM.csv
+['End Time', 'Start Time', 'Name', 'Attacker Address', 'Agent Type', 'Attacker Port', 'Target Port', 'Transport Protocol', 'Agent Severity', 'Device Action', 'Device Inbound Interface', 'Device Outbound Interface', 'Target Address', 'Application Protocol', 'Bytes In', 'Bytes Out', 'Device Host Name', 'Agent Name', 'Device Vendor', 'Flex Number1']
+[DEBUG][sample time] file=[SOC][FW] last 5m Event_10-23-25 9-18-07 AM.csv, head=['Oct 23, 2025 9:13:17 AM', 'Oct 23, 2025 9:13:17 AM', 'Oct 23, 2025 9:13:17 AM']
+[WARN] parse/write failed fw: [SOC][FW] last 5m Event_10-23-25 9-18-07 AM.csv ('NoneType' object has no attribute 'notna')
+[DEBUG][columns] file=[SOC][FW] last 5m Event_10-23-25 9-23-07 AM.csv
+['End Time', 'Start Time', 'Name', 'Attacker Address', 'Agent Type', 'Attacker Port', 'Target Port', 'Transport Protocol', 'Agent Severity', 'Device Action', 'Device Inbound Interface', 'Device Outbound Interface', 'Target Address', 'Application Protocol', 'Bytes In', 'Bytes Out', 'Device Host Name', 'Agent Name', 'Device Vendor', 'Flex Number1']
+[DEBUG][sample time] file=[SOC][FW] last 5m Event_10-23-25 9-23-07 AM.csv, head=['Oct 23, 2025 9:18:18 AM', 'Oct 23, 2025 9:18:18 AM', 'Oct 23, 2025 9:18:18 AM']
+[WARN] parse/write failed fw: [SOC][FW] last 5m Event_10-23-25 9-23-07 AM.csv ('NoneType' object has no attribute 'notna')
+[DEBUG][columns] file=[SOC][FW] last 5m Event_10-23-25 9-28-07 AM.csv
+['End Time', 'Start Time', 'Name', 'Attacker Address', 'Agent Type', 'Attacker Port', 'Target Port', 'Transport Protocol', 'Agent Severity', 'Device Action', 'Device Inbound Interface', 'Device Outbound Interface', 'Target Address', 'Application Protocol', 'Bytes In', 'Bytes Out', 'Device Host Name', 'Agent Name', 'Device Vendor', 'Flex Number1']
+[DEBUG][sample time] file=[SOC][FW] last 5m Event_10-23-25 9-28-07 AM.csv, head=['Oct 23, 2025 9:23:17 AM', 'Oct 23, 2025 9:23:17 AM', 'Oct 23, 2025 9:23:17 AM']
+[WARN] parse/write failed fw: [SOC][FW] last 5m Event_10-23-25 9-28-07 AM.csv ('NoneType' object has no attribute 'notna')
+[DEBUG][columns] file=[SOC][FW] last 5m Event_10-23-25 9-33-07 AM.csv
+['End Time', 'Start Time', 'Name', 'Attacker Address', 'Agent Type', 'Attacker Port', 'Target Port', 'Transport Protocol', 'Agent Severity', 'Device Action', 'Device Inbound Interface', 'Device Outbound Interface', 'Target Address', 'Application Protocol', 'Bytes In', 'Bytes Out', 'Device Host Name', 'Agent Name', 'Device Vendor', 'Flex Number1']
+[DEBUG][sample time] file=[SOC][FW] last 5m Event_10-23-25 9-33-07 AM.csv, head=['Oct 23, 2025 9:28:18 AM', 'Oct 23, 2025 9:28:18 AM', 'Oct 23, 2025 9:28:18 AM']
+[WARN] parse/write failed fw: [SOC][FW] last 5m Event_10-23-25 9-33-07 AM.csv ('NoneType' object has no attribute 'notna')
+[DEBUG][columns] file=[SOC][FW] last 5m Event_10-23-25 9-38-07 AM.csv
+['End Time', 'Start Time', 'Name', 'Attacker Address', 'Agent Type', 'Attacker Port', 'Target Port', 'Transport Protocol', 'Agent Severity', 'Device Action', 'Device Inbound Interface', 'Device Outbound Interface', 'Target Address', 'Application Protocol', 'Bytes In', 'Bytes Out', 'Device Host Name', 'Agent Name', 'Device Vendor', 'Flex Number1']
+[DEBUG][sample time] file=[SOC][FW] last 5m Event_10-23-25 9-38-07 AM.csv, head=['Oct 23, 2025 9:33:16 AM', 'Oct 23, 2025 9:33:16 AM', 'Oct 23, 2025 9:33:16 AM']
+[WARN] parse/write failed fw: [SOC][FW] last 5m Event_10-23-25 9-38-07 AM.csv ('NoneType' object has no attribute 'notna')
+[DEBUG][columns] file=[SOC][FW] last 5m Event_10-23-25 9-43-07 AM.csv
+['End Time', 'Start Time', 'Name', 'Attacker Address', 'Agent Type', 'Attacker Port', 'Target Port', 'Transport Protocol', 'Agent Severity', 'Device Action', 'Device Inbound Interface', 'Device Outbound Interface', 'Target Address', 'Application Protocol', 'Bytes In', 'Bytes Out', 'Device Host Name', 'Agent Name', 'Device Vendor', 'Flex Number1']
+[DEBUG][sample time] file=[SOC][FW] last 5m Event_10-23-25 9-43-07 AM.csv, head=['Oct 23, 2025 9:38:15 AM', 'Oct 23, 2025 9:38:15 AM', 'Oct 23, 2025 9:38:15 AM']
+[WARN] parse/write failed fw: [SOC][FW] last 5m Event_10-23-25 9-43-07 AM.csv ('NoneType' object has no attribute 'notna')
+[DEBUG][columns] file=[SOC][FW] last 5m Event_10-23-25 9-48-07 AM.csv
+['End Time', 'Start Time', 'Name', 'Attacker Address', 'Agent Type', 'Attacker Port', 'Target Port', 'Transport Protocol', 'Agent Severity', 'Device Action', 'Device Inbound Interface', 'Device Outbound Interface', 'Target Address', 'Application Protocol', 'Bytes In', 'Bytes Out', 'Device Host Name', 'Agent Name', 'Device Vendor', 'Flex Number1']
+[DEBUG][sample time] file=[SOC][FW] last 5m Event_10-23-25 9-48-07 AM.csv, head=['Oct 23, 2025 9:43:16 AM', 'Oct 23, 2025 9:43:16 AM', 'Oct 23, 2025 9:43:16 AM']
+[WARN] parse/write failed fw: [SOC][FW] last 5m Event_10-23-25 9-48-07 AM.csv ('NoneType' object has no attribute 'notna')
+[DEBUG][columns] file=[SOC][FW] last 5m Event_10-23-25 9-53-07 AM.csv
+['End Time', 'Start Time', 'Name', 'Attacker Address', 'Agent Type', 'Attacker Port', 'Target Port', 'Transport Protocol', 'Agent Severity', 'Device Action', 'Device Inbound Interface', 'Device Outbound Interface', 'Target Address', 'Application Protocol', 'Bytes In', 'Bytes Out', 'Device Host Name', 'Agent Name', 'Device Vendor', 'Flex Number1']
+[DEBUG][sample time] file=[SOC][FW] last 5m Event_10-23-25 9-53-07 AM.csv, head=['Oct 23, 2025 9:48:16 AM', 'Oct 23, 2025 9:48:16 AM', 'Oct 23, 2025 9:48:16 AM']
+[WARN] parse/write failed fw: [SOC][FW] last 5m Event_10-23-25 9-53-07 AM.csv ('NoneType' object has no attribute 'notna')
+[DEBUG][columns] file=[SOC][FW] last 5m Event_10-23-25 9-58-07 AM.csv
+['End Time', 'Start Time', 'Name', 'Attacker Address', 'Agent Type', 'Attacker Port', 'Target Port', 'Transport Protocol', 'Agent Severity', 'Device Action', 'Device Inbound Interface', 'Device Outbound Interface', 'Target Address', 'Application Protocol', 'Bytes In', 'Bytes Out', 'Device Host Name', 'Agent Name', 'Device Vendor', 'Flex Number1']
+[DEBUG][sample time] file=[SOC][FW] last 5m Event_10-23-25 9-58-07 AM.csv, head=['Oct 23, 2025 9:53:15 AM', 'Oct 23, 2025 9:53:15 AM', 'Oct 23, 2025 9:53:15 AM']
+[WARN] parse/write failed fw: [SOC][FW] last 5m Event_10-23-25 9-58-07 AM.csv ('NoneType' object has no attribute 'notna')
+[DEBUG][columns] file=[SOC][FW] last 5m Event_10-23-25 10-03-07 AM.csv
+['End Time', 'Start Time', 'Name', 'Attacker Address', 'Agent Type', 'Attacker Port', 'Target Port', 'Transport Protocol', 'Agent Severity', 'Device Action', 'Device Inbound Interface', 'Device Outbound Interface', 'Target Address', 'Application Protocol', 'Bytes In', 'Bytes Out', 'Device Host Name', 'Agent Name', 'Device Vendor', 'Flex Number1']
+[DEBUG][sample time] file=[SOC][FW] last 5m Event_10-23-25 10-03-07 AM.csv, head=['Oct 23, 2025 9:58:15 AM', 'Oct 23, 2025 9:58:15 AM', 'Oct 23, 2025 9:58:15 AM']
+[WARN] parse/write failed fw: [SOC][FW] last 5m Event_10-23-25 10-03-07 AM.csv ('NoneType' object has no attribute 'notna')
+[DEBUG][columns] file=[SOC][FW] last 5m Event_10-23-25 10-08-07 AM.csv
+['End Time', 'Start Time', 'Name', 'Attacker Address', 'Agent Type', 'Attacker Port', 'Target Port', 'Transport Protocol', 'Agent Severity', 'Device Action', 'Device Inbound Interface', 'Device Outbound Interface', 'Target Address', 'Application Protocol', 'Bytes In', 'Bytes Out', 'Device Host Name', 'Agent Name', 'Device Vendor', 'Flex Number1']
+[DEBUG][sample time] file=[SOC][FW] last 5m Event_10-23-25 10-08-07 AM.csv, head=['Oct 23, 2025 10:03:15 AM', 'Oct 23, 2025 10:03:15 AM', 'Oct 23, 2025 10:03:15 AM']
+[WARN] parse/write failed fw: [SOC][FW] last 5m Event_10-23-25 10-08-07 AM.csv ('NoneType' object has no attribute 'notna')
+[DEBUG][columns] file=[SOC][FW] last 5m Event_10-23-25 10-13-07 AM.csv
+['End Time', 'Start Time', 'Name', 'Attacker Address', 'Agent Type', 'Attacker Port', 'Target Port', 'Transport Protocol', 'Agent Severity', 'Device Action', 'Device Inbound Interface', 'Device Outbound Interface', 'Target Address', 'Application Protocol', 'Bytes In', 'Bytes Out', 'Device Host Name', 'Agent Name', 'Device Vendor', 'Flex Number1']
+[DEBUG][sample time] file=[SOC][FW] last 5m Event_10-23-25 10-13-07 AM.csv, head=['Oct 23, 2025 10:08:15 AM', 'Oct 23, 2025 10:08:15 AM', 'Oct 23, 2025 10:08:15 AM']
+[WARN] parse/write failed fw: [SOC][FW] last 5m Event_10-23-25 10-13-07 AM.csv ('NoneType' object has no attribute 'notna')
+[DEBUG][columns] file=[SOC][FW] last 5m Event_10-23-25 10-18-07 AM.csv
+['End Time', 'Start Time', 'Name', 'Attacker Address', 'Agent Type', 'Attacker Port', 'Target Port', 'Transport Protocol', 'Agent Severity', 'Device Action', 'Device Inbound Interface', 'Device Outbound Interface', 'Target Address', 'Application Protocol', 'Bytes In', 'Bytes Out', 'Device Host Name', 'Agent Name', 'Device Vendor', 'Flex Number1']
+[DEBUG][sample time] file=[SOC][FW] last 5m Event_10-23-25 10-18-07 AM.csv, head=['Oct 23, 2025 10:13:16 AM', 'Oct 23, 2025 10:13:16 AM', 'Oct 23, 2025 10:13:16 AM']
+[WARN] parse/write failed fw: [SOC][FW] last 5m Event_10-23-25 10-18-07 AM.csv ('NoneType' object has no attribute 'notna')
+[DEBUG][columns] file=[SOC][FW] last 5m Event_10-23-25 10-23-07 AM.csv
+['End Time', 'Start Time', 'Name', 'Attacker Address', 'Agent Type', 'Attacker Port', 'Target Port', 'Transport Protocol', 'Agent Severity', 'Device Action', 'Device Inbound Interface', 'Device Outbound Interface', 'Target Address', 'Application Protocol', 'Bytes In', 'Bytes Out', 'Device Host Name', 'Agent Name', 'Device Vendor', 'Flex Number1']
+[DEBUG][sample time] file=[SOC][FW] last 5m Event_10-23-25 10-23-07 AM.csv, head=['Oct 23, 2025 10:18:16 AM', 'Oct 23, 2025 10:18:16 AM', 'Oct 23, 2025 10:18:16 AM']
+[WARN] parse/write failed fw: [SOC][FW] last 5m Event_10-23-25 10-23-07 AM.csv ('NoneType' object has no attribute 'notna')
+[DEBUG][columns] file=[SOC][FW] last 5m Event_10-23-25 10-28-07 AM.csv
+['End Time', 'Start Time', 'Name', 'Attacker Address', 'Agent Type', 'Attacker Port', 'Target Port', 'Transport Protocol', 'Agent Severity', 'Device Action', 'Device Inbound Interface', 'Device Outbound Interface', 'Target Address', 'Application Protocol', 'Bytes In', 'Bytes Out', 'Device Host Name', 'Agent Name', 'Device Vendor', 'Flex Number1']
+[DEBUG][sample time] file=[SOC][FW] last 5m Event_10-23-25 10-28-07 AM.csv, head=['Oct 23, 2025 10:23:16 AM', 'Oct 23, 2025 10:23:16 AM', 'Oct 23, 2025 10:23:16 AM']
+[WARN] parse/write failed fw: [SOC][FW] last 5m Event_10-23-25 10-28-07 AM.csv ('NoneType' object has no attribute 'notna')
+[DEBUG][columns] file=[SOC][FW] last 5m Event_10-23-25 10-33-07 AM.csv
+['End Time', 'Start Time', 'Name', 'Attacker Address', 'Agent Type', 'Attacker Port', 'Target Port', 'Transport Protocol', 'Agent Severity', 'Device Action', 'Device Inbound Interface', 'Device Outbound Interface', 'Target Address', 'Application Protocol', 'Bytes In', 'Bytes Out', 'Device Host Name', 'Agent Name', 'Device Vendor', 'Flex Number1']
+[DEBUG][sample time] file=[SOC][FW] last 5m Event_10-23-25 10-33-07 AM.csv, head=['Oct 23, 2025 10:28:15 AM', 'Oct 23, 2025 10:28:15 AM', 'Oct 23, 2025 10:28:15 AM']
+[WARN] parse/write failed fw: [SOC][FW] last 5m Event_10-23-25 10-33-07 AM.csv ('NoneType' object has no attribute 'notna')
+[DEBUG][columns] file=[SOC][FW] last 5m Event_10-23-25 10-38-07 AM.csv
+['End Time', 'Start Time', 'Name', 'Attacker Address', 'Agent Type', 'Attacker Port', 'Target Port', 'Transport Protocol', 'Agent Severity', 'Device Action', 'Device Inbound Interface', 'Device Outbound Interface', 'Target Address', 'Application Protocol', 'Bytes In', 'Bytes Out', 'Device Host Name', 'Agent Name', 'Device Vendor', 'Flex Number1']
+[DEBUG][sample time] file=[SOC][FW] last 5m Event_10-23-25 10-38-07 AM.csv, head=['Oct 23, 2025 10:33:15 AM', 'Oct 23, 2025 10:33:15 AM', 'Oct 23, 2025 10:33:15 AM']
+[WARN] parse/write failed fw: [SOC][FW] last 5m Event_10-23-25 10-38-07 AM.csv ('NoneType' object has no attribute 'notna')
+[DEBUG][columns] file=[SOC][FW] last 5m Event_10-23-25 10-43-07 AM.csv
+['End Time', 'Start Time', 'Name', 'Attacker Address', 'Agent Type', 'Attacker Port', 'Target Port', 'Transport Protocol', 'Agent Severity', 'Device Action', 'Device Inbound Interface', 'Device Outbound Interface', 'Target Address', 'Application Protocol', 'Bytes In', 'Bytes Out', 'Device Host Name', 'Agent Name', 'Device Vendor', 'Flex Number1']
+[DEBUG][sample time] file=[SOC][FW] last 5m Event_10-23-25 10-43-07 AM.csv, head=['Oct 23, 2025 10:38:14 AM', 'Oct 23, 2025 10:38:14 AM', 'Oct 23, 2025 10:38:14 AM']
+[WARN] parse/write failed fw: [SOC][FW] last 5m Event_10-23-25 10-43-07 AM.csv ('NoneType' object has no attribute 'notna')
+[DEBUG][columns] file=[SOC][FW] last 5m Event_10-23-25 10-48-07 AM.csv
+['End Time', 'Start Time', 'Name', 'Attacker Address', 'Agent Type', 'Attacker Port', 'Target Port', 'Transport Protocol', 'Agent Severity', 'Device Action', 'Device Inbound Interface', 'Device Outbound Interface', 'Target Address', 'Application Protocol', 'Bytes In', 'Bytes Out', 'Device Host Name', 'Agent Name', 'Device Vendor', 'Flex Number1']
+[DEBUG][sample time] file=[SOC][FW] last 5m Event_10-23-25 10-48-07 AM.csv, head=['Oct 23, 2025 10:43:13 AM', 'Oct 23, 2025 10:43:13 AM', 'Oct 23, 2025 10:43:13 AM']
+[WARN] parse/write failed fw: [SOC][FW] last 5m Event_10-23-25 10-48-07 AM.csv ('NoneType' object has no attribute 'notna')
+[DEBUG][columns] file=[SOC][FW] last 5m Event_10-23-25 10-53-07 AM.csv
+['End Time', 'Start Time', 'Name', 'Attacker Address', 'Agent Type', 'Attacker Port', 'Target Port', 'Transport Protocol', 'Agent Severity', 'Device Action', 'Device Inbound Interface', 'Device Outbound Interface', 'Target Address', 'Application Protocol', 'Bytes In', 'Bytes Out', 'Device Host Name', 'Agent Name', 'Device Vendor', 'Flex Number1']
+[DEBUG][sample time] file=[SOC][FW] last 5m Event_10-23-25 10-53-07 AM.csv, head=['Oct 23, 2025 10:48:14 AM', 'Oct 23, 2025 10:48:14 AM', 'Oct 23, 2025 10:48:14 AM']
+[WARN] parse/write failed fw: [SOC][FW] last 5m Event_10-23-25 10-53-07 AM.csv ('NoneType' object has no attribute 'notna')
+[DEBUG][columns] file=[SOC][FW] last 5m Event_10-23-25 10-58-07 AM.csv
+['End Time', 'Start Time', 'Name', 'Attacker Address', 'Agent Type', 'Attacker Port', 'Target Port', 'Transport Protocol', 'Agent Severity', 'Device Action', 'Device Inbound Interface', 'Device Outbound Interface', 'Target Address', 'Application Protocol', 'Bytes In', 'Bytes Out', 'Device Host Name', 'Agent Name', 'Device Vendor', 'Flex Number1']
+[DEBUG][sample time] file=[SOC][FW] last 5m Event_10-23-25 10-58-07 AM.csv, head=['Oct 23, 2025 10:53:13 AM', 'Oct 23, 2025 10:53:13 AM', 'Oct 23, 2025 10:53:13 AM']
+[WARN] parse/write failed fw: [SOC][FW] last 5m Event_10-23-25 10-58-07 AM.csv ('NoneType' object has no attribute 'notna')
+[DEBUG][columns] file=[SOC][FW] last 5m Event_10-23-25 11-03-07 AM.csv
+['End Time', 'Start Time', 'Name', 'Attacker Address', 'Agent Type', 'Attacker Port', 'Target Port', 'Transport Protocol', 'Agent Severity', 'Device Action', 'Device Inbound Interface', 'Device Outbound Interface', 'Target Address', 'Application Protocol', 'Bytes In', 'Bytes Out', 'Device Host Name', 'Agent Name', 'Device Vendor', 'Flex Number1']
+[DEBUG][sample time] file=[SOC][FW] last 5m Event_10-23-25 11-03-07 AM.csv, head=['Oct 23, 2025 10:58:13 AM', 'Oct 23, 2025 10:58:13 AM', 'Oct 23, 2025 10:58:13 AM']
+[WARN] parse/write failed fw: [SOC][FW] last 5m Event_10-23-25 11-03-07 AM.csv ('NoneType' object has no attribute 'notna')
+[DEBUG][columns] file=[SOC][FW] last 5m Event_10-23-25 11-08-07 AM.csv
+['End Time', 'Start Time', 'Name', 'Attacker Address', 'Agent Type', 'Attacker Port', 'Target Port', 'Transport Protocol', 'Agent Severity', 'Device Action', 'Device Inbound Interface', 'Device Outbound Interface', 'Target Address', 'Application Protocol', 'Bytes In', 'Bytes Out', 'Device Host Name', 'Agent Name', 'Device Vendor', 'Flex Number1']
+[DEBUG][sample time] file=[SOC][FW] last 5m Event_10-23-25 11-08-07 AM.csv, head=['Oct 23, 2025 11:03:14 AM', 'Oct 23, 2025 11:03:14 AM', 'Oct 23, 2025 11:03:14 AM']
+[WARN] parse/write failed fw: [SOC][FW] last 5m Event_10-23-25 11-08-07 AM.csv ('NoneType' object has no attribute 'notna')
+[DEBUG][columns] file=[SOC][FW] last 5m Event_10-23-25 11-13-07 AM.csv
+['End Time', 'Start Time', 'Name', 'Attacker Address', 'Agent Type', 'Attacker Port', 'Target Port', 'Transport Protocol', 'Agent Severity', 'Device Action', 'Device Inbound Interface', 'Device Outbound Interface', 'Target Address', 'Application Protocol', 'Bytes In', 'Bytes Out', 'Device Host Name', 'Agent Name', 'Device Vendor', 'Flex Number1']
+[DEBUG][sample time] file=[SOC][FW] last 5m Event_10-23-25 11-13-07 AM.csv, head=['Oct 23, 2025 11:08:14 AM', 'Oct 23, 2025 11:08:14 AM', 'Oct 23, 2025 11:08:14 AM']
+[WARN] parse/write failed fw: [SOC][FW] last 5m Event_10-23-25 11-13-07 AM.csv ('NoneType' object has no attribute 'notna')
+[DEBUG][columns] file=[SOC][FW] last 5m Event_10-23-25 11-18-07 AM.csv
+['End Time', 'Start Time', 'Name', 'Attacker Address', 'Agent Type', 'Attacker Port', 'Target Port', 'Transport Protocol', 'Agent Severity', 'Device Action', 'Device Inbound Interface', 'Device Outbound Interface', 'Target Address', 'Application Protocol', 'Bytes In', 'Bytes Out', 'Device Host Name', 'Agent Name', 'Device Vendor', 'Flex Number1']
+[DEBUG][sample time] file=[SOC][FW] last 5m Event_10-23-25 11-18-07 AM.csv, head=['Oct 23, 2025 11:13:15 AM', 'Oct 23, 2025 11:13:15 AM', 'Oct 23, 2025 11:13:15 AM']
+[WARN] parse/write failed fw: [SOC][FW] last 5m Event_10-23-25 11-18-07 AM.csv ('NoneType' object has no attribute 'notna')
+[DEBUG][columns] file=[SOC][FW] last 5m Event_10-23-25 11-23-07 AM.csv
+['End Time', 'Start Time', 'Name', 'Attacker Address', 'Agent Type', 'Attacker Port', 'Target Port', 'Transport Protocol', 'Agent Severity', 'Device Action', 'Device Inbound Interface', 'Device Outbound Interface', 'Target Address', 'Application Protocol', 'Bytes In', 'Bytes Out', 'Device Host Name', 'Agent Name', 'Device Vendor', 'Flex Number1']
+[DEBUG][sample time] file=[SOC][FW] last 5m Event_10-23-25 11-23-07 AM.csv, head=['Oct 23, 2025 11:18:15 AM', 'Oct 23, 2025 11:18:15 AM', 'Oct 23, 2025 11:18:15 AM']
+[WARN] parse/write failed fw: [SOC][FW] last 5m Event_10-23-25 11-23-07 AM.csv ('NoneType' object has no attribute 'notna')
+[DEBUG][columns] file=[SOC][FW] last 5m Event_10-23-25 11-28-07 AM.csv
+['End Time', 'Start Time', 'Name', 'Attacker Address', 'Agent Type', 'Attacker Port', 'Target Port', 'Transport Protocol', 'Agent Severity', 'Device Action', 'Device Inbound Interface', 'Device Outbound Interface', 'Target Address', 'Application Protocol', 'Bytes In', 'Bytes Out', 'Device Host Name', 'Agent Name', 'Device Vendor', 'Flex Number1']
+[DEBUG][sample time] file=[SOC][FW] last 5m Event_10-23-25 11-28-07 AM.csv, head=['Oct 23, 2025 11:23:15 AM', 'Oct 23, 2025 11:23:15 AM', 'Oct 23, 2025 11:23:15 AM']
+[WARN] parse/write failed fw: [SOC][FW] last 5m Event_10-23-25 11-28-07 AM.csv ('NoneType' object has no attribute 'notna')
+[DEBUG][columns] file=[SOC][FW] last 5m Event_10-23-25 11-33-07 AM.csv
+['End Time', 'Start Time', 'Name', 'Attacker Address', 'Agent Type', 'Attacker Port', 'Target Port', 'Transport Protocol', 'Agent Severity', 'Device Action', 'Device Inbound Interface', 'Device Outbound Interface', 'Target Address', 'Application Protocol', 'Bytes In', 'Bytes Out', 'Device Host Name', 'Agent Name', 'Device Vendor', 'Flex Number1']
+[DEBUG][sample time] file=[SOC][FW] last 5m Event_10-23-25 11-33-07 AM.csv, head=['Oct 23, 2025 11:28:14 AM', 'Oct 23, 2025 11:28:14 AM', 'Oct 23, 2025 11:28:14 AM']
+[WARN] parse/write failed fw: [SOC][FW] last 5m Event_10-23-25 11-33-07 AM.csv ('NoneType' object has no attribute 'notna')
+[DEBUG][columns] file=[SOC][FW] last 5m Event_10-23-25 11-38-07 AM.csv
+['End Time', 'Start Time', 'Name', 'Attacker Address', 'Agent Type', 'Attacker Port', 'Target Port', 'Transport Protocol', 'Agent Severity', 'Device Action', 'Device Inbound Interface', 'Device Outbound Interface', 'Target Address', 'Application Protocol', 'Bytes In', 'Bytes Out', 'Device Host Name', 'Agent Name', 'Device Vendor', 'Flex Number1']
+[DEBUG][sample time] file=[SOC][FW] last 5m Event_10-23-25 11-38-07 AM.csv, head=['Oct 23, 2025 11:33:11 AM', 'Oct 23, 2025 11:33:11 AM', 'Oct 23, 2025 11:33:11 AM']
+[WARN] parse/write failed fw: [SOC][FW] last 5m Event_10-23-25 11-38-07 AM.csv ('NoneType' object has no attribute 'notna')
+[DEBUG][columns] file=[SOC][FW] last 5m Event_10-23-25 11-43-07 AM.csv
+['End Time', 'Start Time', 'Name', 'Attacker Address', 'Agent Type', 'Attacker Port', 'Target Port', 'Transport Protocol', 'Agent Severity', 'Device Action', 'Device Inbound Interface', 'Device Outbound Interface', 'Target Address', 'Application Protocol', 'Bytes In', 'Bytes Out', 'Device Host Name', 'Agent Name', 'Device Vendor', 'Flex Number1']
+[DEBUG][sample time] file=[SOC][FW] last 5m Event_10-23-25 11-43-07 AM.csv, head=['Oct 23, 2025 11:38:11 AM', 'Oct 23, 2025 11:38:11 AM', 'Oct 23, 2025 11:38:11 AM']
+[WARN] parse/write failed fw: [SOC][FW] last 5m Event_10-23-25 11-43-07 AM.csv ('NoneType' object has no attribute 'notna')
+[DEBUG][columns] file=[SOC][FW] last 5m Event_10-23-25 11-48-07 AM.csv
+['End Time', 'Start Time', 'Name', 'Attacker Address', 'Agent Type', 'Attacker Port', 'Target Port', 'Transport Protocol', 'Agent Severity', 'Device Action', 'Device Inbound Interface', 'Device Outbound Interface', 'Target Address', 'Application Protocol', 'Bytes In', 'Bytes Out', 'Device Host Name', 'Agent Name', 'Device Vendor', 'Flex Number1']
+[DEBUG][sample time] file=[SOC][FW] last 5m Event_10-23-25 11-48-07 AM.csv, head=['Oct 23, 2025 11:43:11 AM', 'Oct 23, 2025 11:43:11 AM', 'Oct 23, 2025 11:43:11 AM']
+[WARN] parse/write failed fw: [SOC][FW] last 5m Event_10-23-25 11-48-07 AM.csv ('NoneType' object has no attribute 'notna')
+[INFO] === waf === files=40 dir=downloads\WAF
+[DEBUG][columns] file=[SOC][WAF] last 5m Event_10-23-25 8-34-34 AM.csv
+['Start Time', 'End Time', 'Name', 'Message', 'Application Protocol', 'Priority', 'Agent Severity', 'Agent Type', 'Agent Name', 'Device Action', 'Device Host Name', 'Device Address', 'Device Vendor', 'Attacker Address', 'Attacker Port', 'Attacker User Name', 'Attacker Geo Country Name', 'Target Address', 'Target Port', 'File Path', 'Request Url', 'Request Method']
+[DEBUG][sample time] file=[SOC][WAF] last 5m Event_10-23-25 8-34-34 AM.csv, head=['Oct 23, 2025 8:29:41 AM', 'Oct 23, 2025 8:29:44 AM', 'Oct 23, 2025 8:29:41 AM']
+[WARN] parse/write failed waf: [SOC][WAF] last 5m Event_10-23-25 8-34-34 AM.csv ('NoneType' object has no attribute 'notna')
+[DEBUG][columns] file=[SOC][WAF] last 5m Event_10-23-25 8-39-34 AM.csv
+['Start Time', 'End Time', 'Name', 'Message', 'Application Protocol', 'Priority', 'Agent Severity', 'Agent Type', 'Agent Name', 'Device Action', 'Device Host Name', 'Device Address', 'Device Vendor', 'Attacker Address', 'Attacker Port', 'Attacker User Name', 'Attacker Geo Country Name', 'Target Address', 'Target Port', 'File Path', 'Request Url', 'Request Method']
+[DEBUG][sample time] file=[SOC][WAF] last 5m Event_10-23-25 8-39-34 AM.csv, head=['Oct 23, 2025 8:34:39 AM', 'Oct 23, 2025 8:34:38 AM', 'Oct 23, 2025 8:34:37 AM']
+[WARN] parse/write failed waf: [SOC][WAF] last 5m Event_10-23-25 8-39-34 AM.csv ('NoneType' object has no attribute 'notna')
+[DEBUG][columns] file=[SOC][WAF] last 5m Event_10-23-25 8-44-34 AM.csv
+['Start Time', 'End Time', 'Name', 'Message', 'Application Protocol', 'Priority', 'Agent Severity', 'Agent Type', 'Agent Name', 'Device Action', 'Device Host Name', 'Device Address', 'Device Vendor', 'Attacker Address', 'Attacker Port', 'Attacker User Name', 'Attacker Geo Country Name', 'Target Address', 'Target Port', 'File Path', 'Request Url', 'Request Method']
+[DEBUG][sample time] file=[SOC][WAF] last 5m Event_10-23-25 8-44-34 AM.csv, head=['Oct 23, 2025 8:39:37 AM', 'Oct 23, 2025 8:39:37 AM', 'Oct 23, 2025 8:39:37 AM']
+[WARN] parse/write failed waf: [SOC][WAF] last 5m Event_10-23-25 8-44-34 AM.csv ('NoneType' object has no attribute 'notna')
+[DEBUG][columns] file=[SOC][WAF] last 5m Event_10-23-25 8-49-34 AM.csv
+['Start Time', 'End Time', 'Name', 'Message', 'Application Protocol', 'Priority', 'Agent Severity', 'Agent Type', 'Agent Name', 'Device Action', 'Device Host Name', 'Device Address', 'Device Vendor', 'Attacker Address', 'Attacker Port', 'Attacker User Name', 'Attacker Geo Country Name', 'Target Address', 'Target Port', 'File Path', 'Request Url', 'Request Method']
+[DEBUG][sample time] file=[SOC][WAF] last 5m Event_10-23-25 8-49-34 AM.csv, head=['Oct 23, 2025 8:44:37 AM', 'Oct 23, 2025 8:44:37 AM', 'Oct 23, 2025 8:44:37 AM']
+[WARN] parse/write failed waf: [SOC][WAF] last 5m Event_10-23-25 8-49-34 AM.csv ('NoneType' object has no attribute 'notna')
+[DEBUG][columns] file=[SOC][WAF] last 5m Event_10-23-25 8-54-34 AM.csv
+['Start Time', 'End Time', 'Name', 'Message', 'Application Protocol', 'Priority', 'Agent Severity', 'Agent Type', 'Agent Name', 'Device Action', 'Device Host Name', 'Device Address', 'Device Vendor', 'Attacker Address', 'Attacker Port', 'Attacker User Name', 'Attacker Geo Country Name', 'Target Address', 'Target Port', 'File Path', 'Request Url', 'Request Method']
+[DEBUG][sample time] file=[SOC][WAF] last 5m Event_10-23-25 8-54-34 AM.csv, head=['Oct 23, 2025 8:49:37 AM', 'Oct 23, 2025 8:49:38 AM', 'Oct 23, 2025 8:49:37 AM']
+[WARN] parse/write failed waf: [SOC][WAF] last 5m Event_10-23-25 8-54-34 AM.csv ('NoneType' object has no attribute 'notna')
+[DEBUG][columns] file=[SOC][WAF] last 5m Event_10-23-25 8-59-34 AM.csv
+['Start Time', 'End Time', 'Name', 'Message', 'Application Protocol', 'Priority', 'Agent Severity', 'Agent Type', 'Agent Name', 'Device Action', 'Device Host Name', 'Device Address', 'Device Vendor', 'Attacker Address', 'Attacker Port', 'Attacker User Name', 'Attacker Geo Country Name', 'Target Address', 'Target Port', 'File Path', 'Request Url', 'Request Method']
+[DEBUG][sample time] file=[SOC][WAF] last 5m Event_10-23-25 8-59-34 AM.csv, head=['Oct 23, 2025 8:54:39 AM', 'Oct 23, 2025 8:54:37 AM', 'Oct 23, 2025 8:54:38 AM']
+[WARN] parse/write failed waf: [SOC][WAF] last 5m Event_10-23-25 8-59-34 AM.csv ('NoneType' object has no attribute 'notna')
+[DEBUG][columns] file=[SOC][WAF] last 5m Event_10-23-25 9-04-34 AM.csv
+['Start Time', 'End Time', 'Name', 'Message', 'Application Protocol', 'Priority', 'Agent Severity', 'Agent Type', 'Agent Name', 'Device Action', 'Device Host Name', 'Device Address', 'Device Vendor', 'Attacker Address', 'Attacker Port', 'Attacker User Name', 'Attacker Geo Country Name', 'Target Address', 'Target Port', 'File Path', 'Request Url', 'Request Method']
+[DEBUG][sample time] file=[SOC][WAF] last 5m Event_10-23-25 9-04-34 AM.csv, head=['Oct 23, 2025 8:59:37 AM', 'Oct 23, 2025 8:59:37 AM', 'Oct 23, 2025 8:59:37 AM']
+[WARN] parse/write failed waf: [SOC][WAF] last 5m Event_10-23-25 9-04-34 AM.csv ('NoneType' object has no attribute 'notna')
+[DEBUG][columns] file=[SOC][WAF] last 5m Event_10-23-25 9-09-34 AM.csv
+['Start Time', 'End Time', 'Name', 'Message', 'Application Protocol', 'Priority', 'Agent Severity', 'Agent Type', 'Agent Name', 'Device Action', 'Device Host Name', 'Device Address', 'Device Vendor', 'Attacker Address', 'Attacker Port', 'Attacker User Name', 'Attacker Geo Country Name', 'Target Address', 'Target Port', 'File Path', 'Request Url', 'Request Method']
+[DEBUG][sample time] file=[SOC][WAF] last 5m Event_10-23-25 9-09-34 AM.csv, head=['Oct 23, 2025 9:04:37 AM', 'Oct 23, 2025 9:04:37 AM', 'Oct 23, 2025 9:04:37 AM']
+[WARN] parse/write failed waf: [SOC][WAF] last 5m Event_10-23-25 9-09-34 AM.csv ('NoneType' object has no attribute 'notna')
+[DEBUG][columns] file=[SOC][WAF] last 5m Event_10-23-25 9-14-34 AM.csv
+['Start Time', 'End Time', 'Name', 'Message', 'Application Protocol', 'Priority', 'Agent Severity', 'Agent Type', 'Agent Name', 'Device Action', 'Device Host Name', 'Device Address', 'Device Vendor', 'Attacker Address', 'Attacker Port', 'Attacker User Name', 'Attacker Geo Country Name', 'Target Address', 'Target Port', 'File Path', 'Request Url', 'Request Method']
+[DEBUG][sample time] file=[SOC][WAF] last 5m Event_10-23-25 9-14-34 AM.csv, head=['Oct 23, 2025 9:09:37 AM', 'Oct 23, 2025 9:09:37 AM', 'Oct 23, 2025 9:09:37 AM']
+[WARN] parse/write failed waf: [SOC][WAF] last 5m Event_10-23-25 9-14-34 AM.csv ('NoneType' object has no attribute 'notna')
+[DEBUG][columns] file=[SOC][WAF] last 5m Event_10-23-25 9-19-34 AM.csv
+['Start Time', 'End Time', 'Name', 'Message', 'Application Protocol', 'Priority', 'Agent Severity', 'Agent Type', 'Agent Name', 'Device Action', 'Device Host Name', 'Device Address', 'Device Vendor', 'Attacker Address', 'Attacker Port', 'Attacker User Name', 'Attacker Geo Country Name', 'Target Address', 'Target Port', 'File Path', 'Request Url', 'Request Method']
+[DEBUG][sample time] file=[SOC][WAF] last 5m Event_10-23-25 9-19-34 AM.csv, head=['Oct 23, 2025 9:14:37 AM', 'Oct 23, 2025 9:14:38 AM', 'Oct 23, 2025 9:14:37 AM']
+[WARN] parse/write failed waf: [SOC][WAF] last 5m Event_10-23-25 9-19-34 AM.csv ('NoneType' object has no attribute 'notna')
+[DEBUG][columns] file=[SOC][WAF] last 5m Event_10-23-25 9-24-34 AM.csv
+['Start Time', 'End Time', 'Name', 'Message', 'Application Protocol', 'Priority', 'Agent Severity', 'Agent Type', 'Agent Name', 'Device Action', 'Device Host Name', 'Device Address', 'Device Vendor', 'Attacker Address', 'Attacker Port', 'Attacker User Name', 'Attacker Geo Country Name', 'Target Address', 'Target Port', 'File Path', 'Request Url', 'Request Method']
+[DEBUG][sample time] file=[SOC][WAF] last 5m Event_10-23-25 9-24-34 AM.csv, head=['Oct 23, 2025 9:19:37 AM', 'Oct 23, 2025 9:19:37 AM', 'Oct 23, 2025 9:19:37 AM']
+[WARN] parse/write failed waf: [SOC][WAF] last 5m Event_10-23-25 9-24-34 AM.csv ('NoneType' object has no attribute 'notna')
+[DEBUG][columns] file=[SOC][WAF] last 5m Event_10-23-25 9-29-34 AM.csv
+['Start Time', 'End Time', 'Name', 'Message', 'Application Protocol', 'Priority', 'Agent Severity', 'Agent Type', 'Agent Name', 'Device Action', 'Device Host Name', 'Device Address', 'Device Vendor', 'Attacker Address', 'Attacker Port', 'Attacker User Name', 'Attacker Geo Country Name', 'Target Address', 'Target Port', 'File Path', 'Request Url', 'Request Method']
+[DEBUG][sample time] file=[SOC][WAF] last 5m Event_10-23-25 9-29-34 AM.csv, head=['Oct 23, 2025 9:24:37 AM', 'Oct 23, 2025 9:24:37 AM', 'Oct 23, 2025 9:24:37 AM']
+[WARN] parse/write failed waf: [SOC][WAF] last 5m Event_10-23-25 9-29-34 AM.csv ('NoneType' object has no attribute 'notna')
+[DEBUG][columns] file=[SOC][WAF] last 5m Event_10-23-25 9-34-34 AM.csv
+['Start Time', 'End Time', 'Name', 'Message', 'Application Protocol', 'Priority', 'Agent Severity', 'Agent Type', 'Agent Name', 'Device Action', 'Device Host Name', 'Device Address', 'Device Vendor', 'Attacker Address', 'Attacker Port', 'Attacker User Name', 'Attacker Geo Country Name', 'Target Address', 'Target Port', 'File Path', 'Request Url', 'Request Method']
+[DEBUG][sample time] file=[SOC][WAF] last 5m Event_10-23-25 9-34-34 AM.csv, head=['Oct 23, 2025 9:29:37 AM', 'Oct 23, 2025 9:29:37 AM', 'Oct 23, 2025 9:29:37 AM']
+[WARN] parse/write failed waf: [SOC][WAF] last 5m Event_10-23-25 9-34-34 AM.csv ('NoneType' object has no attribute 'notna')
+[DEBUG][columns] file=[SOC][WAF] last 5m Event_10-23-25 9-39-34 AM.csv
+['Start Time', 'End Time', 'Name', 'Message', 'Application Protocol', 'Priority', 'Agent Severity', 'Agent Type', 'Agent Name', 'Device Action', 'Device Host Name', 'Device Address', 'Device Vendor', 'Attacker Address', 'Attacker Port', 'Attacker User Name', 'Attacker Geo Country Name', 'Target Address', 'Target Port', 'File Path', 'Request Url', 'Request Method']
+[DEBUG][sample time] file=[SOC][WAF] last 5m Event_10-23-25 9-39-34 AM.csv, head=['Oct 23, 2025 9:34:37 AM', 'Oct 23, 2025 9:34:35 AM', 'Oct 23, 2025 9:34:36 AM']
+[WARN] parse/write failed waf: [SOC][WAF] last 5m Event_10-23-25 9-39-34 AM.csv ('NoneType' object has no attribute 'notna')
+[DEBUG][columns] file=[SOC][WAF] last 5m Event_10-23-25 9-44-34 AM.csv
+['Start Time', 'End Time', 'Name', 'Message', 'Application Protocol', 'Priority', 'Agent Severity', 'Agent Type', 'Agent Name', 'Device Action', 'Device Host Name', 'Device Address', 'Device Vendor', 'Attacker Address', 'Attacker Port', 'Attacker User Name', 'Attacker Geo Country Name', 'Target Address', 'Target Port', 'File Path', 'Request Url', 'Request Method']
+[DEBUG][sample time] file=[SOC][WAF] last 5m Event_10-23-25 9-44-34 AM.csv, head=['Oct 23, 2025 9:39:36 AM', 'Oct 23, 2025 9:39:36 AM', 'Oct 23, 2025 9:39:35 AM']
+[WARN] parse/write failed waf: [SOC][WAF] last 5m Event_10-23-25 9-44-34 AM.csv ('NoneType' object has no attribute 'notna')
+[DEBUG][columns] file=[SOC][WAF] last 5m Event_10-23-25 9-49-34 AM.csv
+['Start Time', 'End Time', 'Name', 'Message', 'Application Protocol', 'Priority', 'Agent Severity', 'Agent Type', 'Agent Name', 'Device Action', 'Device Host Name', 'Device Address', 'Device Vendor', 'Attacker Address', 'Attacker Port', 'Attacker User Name', 'Attacker Geo Country Name', 'Target Address', 'Target Port', 'File Path', 'Request Url', 'Request Method']
+[DEBUG][sample time] file=[SOC][WAF] last 5m Event_10-23-25 9-49-34 AM.csv, head=['Oct 23, 2025 9:44:35 AM', 'Oct 23, 2025 9:44:35 AM', 'Oct 23, 2025 9:44:35 AM']
+[WARN] parse/write failed waf: [SOC][WAF] last 5m Event_10-23-25 9-49-34 AM.csv ('NoneType' object has no attribute 'notna')
+[DEBUG][columns] file=[SOC][WAF] last 5m Event_10-23-25 9-54-34 AM.csv
+['Start Time', 'End Time', 'Name', 'Message', 'Application Protocol', 'Priority', 'Agent Severity', 'Agent Type', 'Agent Name', 'Device Action', 'Device Host Name', 'Device Address', 'Device Vendor', 'Attacker Address', 'Attacker Port', 'Attacker User Name', 'Attacker Geo Country Name', 'Target Address', 'Target Port', 'File Path', 'Request Url', 'Request Method']
+[DEBUG][sample time] file=[SOC][WAF] last 5m Event_10-23-25 9-54-34 AM.csv, head=['Oct 23, 2025 9:49:35 AM', 'Oct 23, 2025 9:49:35 AM', 'Oct 23, 2025 9:49:35 AM']
+[WARN] parse/write failed waf: [SOC][WAF] last 5m Event_10-23-25 9-54-34 AM.csv ('NoneType' object has no attribute 'notna')
+[DEBUG][columns] file=[SOC][WAF] last 5m Event_10-23-25 9-59-34 AM.csv
+['Start Time', 'End Time', 'Name', 'Message', 'Application Protocol', 'Priority', 'Agent Severity', 'Agent Type', 'Agent Name', 'Device Action', 'Device Host Name', 'Device Address', 'Device Vendor', 'Attacker Address', 'Attacker Port', 'Attacker User Name', 'Attacker Geo Country Name', 'Target Address', 'Target Port', 'File Path', 'Request Url', 'Request Method']
+[DEBUG][sample time] file=[SOC][WAF] last 5m Event_10-23-25 9-59-34 AM.csv, head=['Oct 23, 2025 9:54:35 AM', 'Oct 23, 2025 9:54:35 AM', 'Oct 23, 2025 9:54:35 AM']
+[WARN] parse/write failed waf: [SOC][WAF] last 5m Event_10-23-25 9-59-34 AM.csv ('NoneType' object has no attribute 'notna')
+[DEBUG][columns] file=[SOC][WAF] last 5m Event_10-23-25 10-04-34 AM.csv
+['Start Time', 'End Time', 'Name', 'Message', 'Application Protocol', 'Priority', 'Agent Severity', 'Agent Type', 'Agent Name', 'Device Action', 'Device Host Name', 'Device Address', 'Device Vendor', 'Attacker Address', 'Attacker Port', 'Attacker User Name', 'Attacker Geo Country Name', 'Target Address', 'Target Port', 'File Path', 'Request Url', 'Request Method']
+[DEBUG][sample time] file=[SOC][WAF] last 5m Event_10-23-25 10-04-34 AM.csv, head=['Oct 23, 2025 9:59:35 AM', 'Oct 23, 2025 9:59:35 AM', 'Oct 23, 2025 9:59:36 AM']
+[WARN] parse/write failed waf: [SOC][WAF] last 5m Event_10-23-25 10-04-34 AM.csv ('NoneType' object has no attribute 'notna')
+[DEBUG][columns] file=[SOC][WAF] last 5m Event_10-23-25 10-09-34 AM.csv
+['Start Time', 'End Time', 'Name', 'Message', 'Application Protocol', 'Priority', 'Agent Severity', 'Agent Type', 'Agent Name', 'Device Action', 'Device Host Name', 'Device Address', 'Device Vendor', 'Attacker Address', 'Attacker Port', 'Attacker User Name', 'Attacker Geo Country Name', 'Target Address', 'Target Port', 'File Path', 'Request Url', 'Request Method']
+[DEBUG][sample time] file=[SOC][WAF] last 5m Event_10-23-25 10-09-34 AM.csv, head=['Oct 23, 2025 10:04:35 AM', 'Oct 23, 2025 10:04:35 AM', 'Oct 23, 2025 10:04:35 AM']
+[WARN] parse/write failed waf: [SOC][WAF] last 5m Event_10-23-25 10-09-34 AM.csv ('NoneType' object has no attribute 'notna')
+[DEBUG][columns] file=[SOC][WAF] last 5m Event_10-23-25 10-14-34 AM.csv
+['Start Time', 'End Time', 'Name', 'Message', 'Application Protocol', 'Priority', 'Agent Severity', 'Agent Type', 'Agent Name', 'Device Action', 'Device Host Name', 'Device Address', 'Device Vendor', 'Attacker Address', 'Attacker Port', 'Attacker User Name', 'Attacker Geo Country Name', 'Target Address', 'Target Port', 'File Path', 'Request Url', 'Request Method']
+[DEBUG][sample time] file=[SOC][WAF] last 5m Event_10-23-25 10-14-34 AM.csv, head=['Oct 23, 2025 10:09:35 AM', 'Oct 23, 2025 10:09:35 AM', 'Oct 23, 2025 10:09:36 AM']
+[WARN] parse/write failed waf: [SOC][WAF] last 5m Event_10-23-25 10-14-34 AM.csv ('NoneType' object has no attribute 'notna')
+[DEBUG][columns] file=[SOC][WAF] last 5m Event_10-23-25 10-19-34 AM.csv
+['Start Time', 'End Time', 'Name', 'Message', 'Application Protocol', 'Priority', 'Agent Severity', 'Agent Type', 'Agent Name', 'Device Action', 'Device Host Name', 'Device Address', 'Device Vendor', 'Attacker Address', 'Attacker Port', 'Attacker User Name', 'Attacker Geo Country Name', 'Target Address', 'Target Port', 'File Path', 'Request Url', 'Request Method']
+[DEBUG][sample time] file=[SOC][WAF] last 5m Event_10-23-25 10-19-34 AM.csv, head=['Oct 23, 2025 10:14:35 AM', 'Oct 23, 2025 10:14:36 AM', 'Oct 23, 2025 10:14:36 AM']
+[WARN] parse/write failed waf: [SOC][WAF] last 5m Event_10-23-25 10-19-34 AM.csv ('NoneType' object has no attribute 'notna')
+[DEBUG][columns] file=[SOC][WAF] last 5m Event_10-23-25 10-24-34 AM.csv
+['Start Time', 'End Time', 'Name', 'Message', 'Application Protocol', 'Priority', 'Agent Severity', 'Agent Type', 'Agent Name', 'Device Action', 'Device Host Name', 'Device Address', 'Device Vendor', 'Attacker Address', 'Attacker Port', 'Attacker User Name', 'Attacker Geo Country Name', 'Target Address', 'Target Port', 'File Path', 'Request Url', 'Request Method']
+[DEBUG][sample time] file=[SOC][WAF] last 5m Event_10-23-25 10-24-34 AM.csv, head=['Oct 23, 2025 10:19:35 AM', 'Oct 23, 2025 10:19:35 AM', 'Oct 23, 2025 10:19:35 AM']
+[WARN] parse/write failed waf: [SOC][WAF] last 5m Event_10-23-25 10-24-34 AM.csv ('NoneType' object has no attribute 'notna')
+[DEBUG][columns] file=[SOC][WAF] last 5m Event_10-23-25 10-29-34 AM.csv
+['Start Time', 'End Time', 'Name', 'Message', 'Application Protocol', 'Priority', 'Agent Severity', 'Agent Type', 'Agent Name', 'Device Action', 'Device Host Name', 'Device Address', 'Device Vendor', 'Attacker Address', 'Attacker Port', 'Attacker User Name', 'Attacker Geo Country Name', 'Target Address', 'Target Port', 'File Path', 'Request Url', 'Request Method']
+[DEBUG][sample time] file=[SOC][WAF] last 5m Event_10-23-25 10-29-34 AM.csv, head=['Oct 23, 2025 10:24:35 AM', 'Oct 23, 2025 10:24:35 AM', 'Oct 23, 2025 10:24:35 AM']
+[WARN] parse/write failed waf: [SOC][WAF] last 5m Event_10-23-25 10-29-34 AM.csv ('NoneType' object has no attribute 'notna')
+[DEBUG][columns] file=[SOC][WAF] last 5m Event_10-23-25 10-34-34 AM.csv
+['Start Time', 'End Time', 'Name', 'Message', 'Application Protocol', 'Priority', 'Agent Severity', 'Agent Type', 'Agent Name', 'Device Action', 'Device Host Name', 'Device Address', 'Device Vendor', 'Attacker Address', 'Attacker Port', 'Attacker User Name', 'Attacker Geo Country Name', 'Target Address', 'Target Port', 'File Path', 'Request Url', 'Request Method']
+[DEBUG][sample time] file=[SOC][WAF] last 5m Event_10-23-25 10-34-34 AM.csv, head=['Oct 23, 2025 10:29:36 AM', 'Oct 23, 2025 10:29:36 AM', 'Oct 23, 2025 10:29:36 AM']
+[WARN] parse/write failed waf: [SOC][WAF] last 5m Event_10-23-25 10-34-34 AM.csv ('NoneType' object has no attribute 'notna')
+[DEBUG][columns] file=[SOC][WAF] last 5m Event_10-23-25 10-39-34 AM.csv
+['Start Time', 'End Time', 'Name', 'Message', 'Application Protocol', 'Priority', 'Agent Severity', 'Agent Type', 'Agent Name', 'Device Action', 'Device Host Name', 'Device Address', 'Device Vendor', 'Attacker Address', 'Attacker Port', 'Attacker User Name', 'Attacker Geo Country Name', 'Target Address', 'Target Port', 'File Path', 'Request Url', 'Request Method']
+[DEBUG][sample time] file=[SOC][WAF] last 5m Event_10-23-25 10-39-34 AM.csv, head=['Oct 23, 2025 10:34:44 AM', 'Oct 23, 2025 10:34:43 AM', 'Oct 23, 2025 10:34:43 AM']
+[WARN] parse/write failed waf: [SOC][WAF] last 5m Event_10-23-25 10-39-34 AM.csv ('NoneType' object has no attribute 'notna')
+[DEBUG][columns] file=[SOC][WAF] last 5m Event_10-23-25 10-44-34 AM.csv
+['Start Time', 'End Time', 'Name', 'Message', 'Application Protocol', 'Priority', 'Agent Severity', 'Agent Type', 'Agent Name', 'Device Action', 'Device Host Name', 'Device Address', 'Device Vendor', 'Attacker Address', 'Attacker Port', 'Attacker User Name', 'Attacker Geo Country Name', 'Target Address', 'Target Port', 'File Path', 'Request Url', 'Request Method']
+[DEBUG][sample time] file=[SOC][WAF] last 5m Event_10-23-25 10-44-34 AM.csv, head=['Oct 23, 2025 10:39:43 AM', 'Oct 23, 2025 10:39:43 AM', 'Oct 23, 2025 10:39:43 AM']
+[WARN] parse/write failed waf: [SOC][WAF] last 5m Event_10-23-25 10-44-34 AM.csv ('NoneType' object has no attribute 'notna')
+[DEBUG][columns] file=[SOC][WAF] last 5m Event_10-23-25 10-49-34 AM.csv
+['Start Time', 'End Time', 'Name', 'Message', 'Application Protocol', 'Priority', 'Agent Severity', 'Agent Type', 'Agent Name', 'Device Action', 'Device Host Name', 'Device Address', 'Device Vendor', 'Attacker Address', 'Attacker Port', 'Attacker User Name', 'Attacker Geo Country Name', 'Target Address', 'Target Port', 'File Path', 'Request Url', 'Request Method']
+[DEBUG][sample time] file=[SOC][WAF] last 5m Event_10-23-25 10-49-34 AM.csv, head=['Oct 23, 2025 10:44:43 AM', 'Oct 23, 2025 10:44:43 AM', 'Oct 23, 2025 10:44:43 AM']
+[WARN] parse/write failed waf: [SOC][WAF] last 5m Event_10-23-25 10-49-34 AM.csv ('NoneType' object has no attribute 'notna')
+[DEBUG][columns] file=[SOC][WAF] last 5m Event_10-23-25 10-54-34 AM.csv
+['Start Time', 'End Time', 'Name', 'Message', 'Application Protocol', 'Priority', 'Agent Severity', 'Agent Type', 'Agent Name', 'Device Action', 'Device Host Name', 'Device Address', 'Device Vendor', 'Attacker Address', 'Attacker Port', 'Attacker User Name', 'Attacker Geo Country Name', 'Target Address', 'Target Port', 'File Path', 'Request Url', 'Request Method']
+[DEBUG][sample time] file=[SOC][WAF] last 5m Event_10-23-25 10-54-34 AM.csv, head=['Oct 23, 2025 10:49:43 AM', 'Oct 23, 2025 10:49:43 AM', 'Oct 23, 2025 10:49:43 AM']
+[WARN] parse/write failed waf: [SOC][WAF] last 5m Event_10-23-25 10-54-34 AM.csv ('NoneType' object has no attribute 'notna')
+[DEBUG][columns] file=[SOC][WAF] last 5m Event_10-23-25 10-59-34 AM.csv
+['Start Time', 'End Time', 'Name', 'Message', 'Application Protocol', 'Priority', 'Agent Severity', 'Agent Type', 'Agent Name', 'Device Action', 'Device Host Name', 'Device Address', 'Device Vendor', 'Attacker Address', 'Attacker Port', 'Attacker User Name', 'Attacker Geo Country Name', 'Target Address', 'Target Port', 'File Path', 'Request Url', 'Request Method']
+[DEBUG][sample time] file=[SOC][WAF] last 5m Event_10-23-25 10-59-34 AM.csv, head=['Oct 23, 2025 10:54:43 AM', 'Oct 23, 2025 10:54:43 AM', 'Oct 23, 2025 10:54:44 AM']
+[WARN] parse/write failed waf: [SOC][WAF] last 5m Event_10-23-25 10-59-34 AM.csv ('NoneType' object has no attribute 'notna')
+[DEBUG][columns] file=[SOC][WAF] last 5m Event_10-23-25 11-04-34 AM.csv
+['Start Time', 'End Time', 'Name', 'Message', 'Application Protocol', 'Priority', 'Agent Severity', 'Agent Type', 'Agent Name', 'Device Action', 'Device Host Name', 'Device Address', 'Device Vendor', 'Attacker Address', 'Attacker Port', 'Attacker User Name', 'Attacker Geo Country Name', 'Target Address', 'Target Port', 'File Path', 'Request Url', 'Request Method']
+[DEBUG][sample time] file=[SOC][WAF] last 5m Event_10-23-25 11-04-34 AM.csv, head=['Oct 23, 2025 10:59:43 AM', 'Oct 23, 2025 10:59:43 AM', 'Oct 23, 2025 10:59:43 AM']
+[WARN] parse/write failed waf: [SOC][WAF] last 5m Event_10-23-25 11-04-34 AM.csv ('NoneType' object has no attribute 'notna')
+[DEBUG][columns] file=[SOC][WAF] last 5m Event_10-23-25 11-09-34 AM.csv
+['Start Time', 'End Time', 'Name', 'Message', 'Application Protocol', 'Priority', 'Agent Severity', 'Agent Type', 'Agent Name', 'Device Action', 'Device Host Name', 'Device Address', 'Device Vendor', 'Attacker Address', 'Attacker Port', 'Attacker User Name', 'Attacker Geo Country Name', 'Target Address', 'Target Port', 'File Path', 'Request Url', 'Request Method']
+[DEBUG][sample time] file=[SOC][WAF] last 5m Event_10-23-25 11-09-34 AM.csv, head=['Oct 23, 2025 11:04:44 AM', 'Oct 23, 2025 11:04:44 AM', 'Oct 23, 2025 11:04:45 AM']
+[WARN] parse/write failed waf: [SOC][WAF] last 5m Event_10-23-25 11-09-34 AM.csv ('NoneType' object has no attribute 'notna')
+[DEBUG][columns] file=[SOC][WAF] last 5m Event_10-23-25 11-14-34 AM.csv
+['Start Time', 'End Time', 'Name', 'Message', 'Application Protocol', 'Priority', 'Agent Severity', 'Agent Type', 'Agent Name', 'Device Action', 'Device Host Name', 'Device Address', 'Device Vendor', 'Attacker Address', 'Attacker Port', 'Attacker User Name', 'Attacker Geo Country Name', 'Target Address', 'Target Port', 'File Path', 'Request Url', 'Request Method']
+[DEBUG][sample time] file=[SOC][WAF] last 5m Event_10-23-25 11-14-34 AM.csv, head=['Oct 23, 2025 11:09:45 AM', 'Oct 23, 2025 11:09:44 AM', 'Oct 23, 2025 11:09:44 AM']
+[WARN] parse/write failed waf: [SOC][WAF] last 5m Event_10-23-25 11-14-34 AM.csv ('NoneType' object has no attribute 'notna')
+[DEBUG][columns] file=[SOC][WAF] last 5m Event_10-23-25 11-19-34 AM.csv
+['Start Time', 'End Time', 'Name', 'Message', 'Application Protocol', 'Priority', 'Agent Severity', 'Agent Type', 'Agent Name', 'Device Action', 'Device Host Name', 'Device Address', 'Device Vendor', 'Attacker Address', 'Attacker Port', 'Attacker User Name', 'Attacker Geo Country Name', 'Target Address', 'Target Port', 'File Path', 'Request Url', 'Request Method']
+[DEBUG][sample time] file=[SOC][WAF] last 5m Event_10-23-25 11-19-34 AM.csv, head=['Oct 23, 2025 11:14:44 AM', 'Oct 23, 2025 11:14:44 AM', 'Oct 23, 2025 11:14:45 AM']
+[WARN] parse/write failed waf: [SOC][WAF] last 5m Event_10-23-25 11-19-34 AM.csv ('NoneType' object has no attribute 'notna')
+[DEBUG][columns] file=[SOC][WAF] last 5m Event_10-23-25 11-24-34 AM.csv
+['Start Time', 'End Time', 'Name', 'Message', 'Application Protocol', 'Priority', 'Agent Severity', 'Agent Type', 'Agent Name', 'Device Action', 'Device Host Name', 'Device Address', 'Device Vendor', 'Attacker Address', 'Attacker Port', 'Attacker User Name', 'Attacker Geo Country Name', 'Target Address', 'Target Port', 'File Path', 'Request Url', 'Request Method']
+[DEBUG][sample time] file=[SOC][WAF] last 5m Event_10-23-25 11-24-34 AM.csv, head=['Oct 23, 2025 11:19:45 AM', 'Oct 23, 2025 11:19:44 AM', 'Oct 23, 2025 11:19:44 AM']
+[WARN] parse/write failed waf: [SOC][WAF] last 5m Event_10-23-25 11-24-34 AM.csv ('NoneType' object has no attribute 'notna')
+[DEBUG][columns] file=[SOC][WAF] last 5m Event_10-23-25 11-29-34 AM.csv
+['Start Time', 'End Time', 'Name', 'Message', 'Application Protocol', 'Priority', 'Agent Severity', 'Agent Type', 'Agent Name', 'Device Action', 'Device Host Name', 'Device Address', 'Device Vendor', 'Attacker Address', 'Attacker Port', 'Attacker User Name', 'Attacker Geo Country Name', 'Target Address', 'Target Port', 'File Path', 'Request Url', 'Request Method']
+[DEBUG][sample time] file=[SOC][WAF] last 5m Event_10-23-25 11-29-34 AM.csv, head=['Oct 23, 2025 11:24:45 AM', 'Oct 23, 2025 11:24:45 AM', 'Oct 23, 2025 11:24:45 AM']
+[WARN] parse/write failed waf: [SOC][WAF] last 5m Event_10-23-25 11-29-34 AM.csv ('NoneType' object has no attribute 'notna')
+[DEBUG][columns] file=[SOC][WAF] last 5m Event_10-23-25 11-34-34 AM.csv
+['Start Time', 'End Time', 'Name', 'Message', 'Application Protocol', 'Priority', 'Agent Severity', 'Agent Type', 'Agent Name', 'Device Action', 'Device Host Name', 'Device Address', 'Device Vendor', 'Attacker Address', 'Attacker Port', 'Attacker User Name', 'Attacker Geo Country Name', 'Target Address', 'Target Port', 'File Path', 'Request Url', 'Request Method']
+[DEBUG][sample time] file=[SOC][WAF] last 5m Event_10-23-25 11-34-34 AM.csv, head=['Oct 23, 2025 11:29:44 AM', 'Oct 23, 2025 11:29:44 AM', 'Oct 23, 2025 11:29:44 AM']
+[WARN] parse/write failed waf: [SOC][WAF] last 5m Event_10-23-25 11-34-34 AM.csv ('NoneType' object has no attribute 'notna')
+[DEBUG][columns] file=[SOC][WAF] last 5m Event_10-23-25 11-39-34 AM.csv
+['Start Time', 'End Time', 'Name', 'Message', 'Application Protocol', 'Priority', 'Agent Severity', 'Agent Type', 'Agent Name', 'Device Action', 'Device Host Name', 'Device Address', 'Device Vendor', 'Attacker Address', 'Attacker Port', 'Attacker User Name', 'Attacker Geo Country Name', 'Target Address', 'Target Port', 'File Path', 'Request Url', 'Request Method']
+[DEBUG][sample time] file=[SOC][WAF] last 5m Event_10-23-25 11-39-34 AM.csv, head=['Oct 23, 2025 11:34:41 AM', 'Oct 23, 2025 11:34:41 AM', 'Oct 23, 2025 11:34:41 AM']
+[WARN] parse/write failed waf: [SOC][WAF] last 5m Event_10-23-25 11-39-34 AM.csv ('NoneType' object has no attribute 'notna')
+[DEBUG][columns] file=[SOC][WAF] last 5m Event_10-23-25 11-44-34 AM.csv
+['Start Time', 'End Time', 'Name', 'Message', 'Application Protocol', 'Priority', 'Agent Severity', 'Agent Type', 'Agent Name', 'Device Action', 'Device Host Name', 'Device Address', 'Device Vendor', 'Attacker Address', 'Attacker Port', 'Attacker User Name', 'Attacker Geo Country Name', 'Target Address', 'Target Port', 'File Path', 'Request Url', 'Request Method']
+[DEBUG][sample time] file=[SOC][WAF] last 5m Event_10-23-25 11-44-34 AM.csv, head=['Oct 23, 2025 11:39:41 AM', 'Oct 23, 2025 11:39:41 AM', 'Oct 23, 2025 11:39:41 AM']
+[WARN] parse/write failed waf: [SOC][WAF] last 5m Event_10-23-25 11-44-34 AM.csv ('NoneType' object has no attribute 'notna')
+[DEBUG][columns] file=[SOC][WAF] last 5m Event_10-23-25 11-49-34 AM.csv
+['Start Time', 'End Time', 'Name', 'Message', 'Application Protocol', 'Priority', 'Agent Severity', 'Agent Type', 'Agent Name', 'Device Action', 'Device Host Name', 'Device Address', 'Device Vendor', 'Attacker Address', 'Attacker Port', 'Attacker User Name', 'Attacker Geo Country Name', 'Target Address', 'Target Port', 'File Path', 'Request Url', 'Request Method']
+[DEBUG][sample time] file=[SOC][WAF] last 5m Event_10-23-25 11-49-34 AM.csv, head=['Oct 23, 2025 11:44:41 AM', 'Oct 23, 2025 11:44:41 AM', 'Oct 23, 2025 11:44:42 AM']
+[WARN] parse/write failed waf: [SOC][WAF] last 5m Event_10-23-25 11-49-34 AM.csv ('NoneType' object has no attribute 'notna')
+[SUMMARY] files=0, rows_written~=0

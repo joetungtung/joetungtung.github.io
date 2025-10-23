@@ -103,3 +103,10 @@ from(bucket: "SOC")
   |> sort(columns: ["events"], desc: true)
   |> limit(n: 10)
   |> keep(columns: ["event_name","events"])
+
+
+import "influxdata/influxdb/schema"
+schema.tagKeys(bucket: "SOC", predicate: (r) => r._measurement == "arcsight_event")
+  |> yield(name: "tags")
+
+

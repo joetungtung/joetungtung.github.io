@@ -1,25 +1,87 @@
-# ---- robust, case-insensitive column picker ----
-from typing import Iterable, Optional
+_EPOCH_RE = re.compile(r"^\d{9,}$")  # 9+ digits => epoch
 
-def _norm(s: str) -> str:
-    # 大小寫不敏感、忽略底線與多餘空白
-    return " ".join(s.replace("_", " ").strip().lower().split())
+def _epoch_to_utc_ts(v: float) -> Optional[pd.Timestamp]:
+    try:
+        v = float(v)
+    except Exception:
+        return None  # 交由 pandas 轉 NaT
+    if v > 1e14:        # ns
+        secs = v / 1_000_000_000.0
+    elif v > 1e11:      # ms
+        secs = v / 1_000.0
+    else:               # s
+        secs = v
+    return pd.Timestamp(datetime.fromtimestamp(secs, tz=timezone.utc))
 
-def pick_ci(df: pd.DataFrame, candidates: Iterable[str]) -> Optional[pd.Series]:
-    if df is None or df.empty:
-        return None
-    norm_map = {_norm(c): c for c in df.columns}  # normalized name -> actual name
-    for want in candidates:
-        key = _norm(want)
-        if key in norm_map:
-            return df[norm_map[key]]
-    # 也試試看「單字包含」配對（例如 "timestamp" 能抓到 "event timestamp"）
-    for want in candidates:
-        key = _norm(want)
-        for norm_col, real_col in norm_map.items():
-            if key in norm_col:
-                return df[real_col]
-    return None
+def to_ts(s) -> pd.Series:
+    """
+    將 Series/array-like 的時間字串/epoch 轉 UTC Timestamp（tz-aware）。
+      1) 純數字 → epoch（自動判斷 s/ms/ns）
+      2) 字串：先嘗試 '%b %d, %Y %I:%M:%S %p'（如 'Oct 23, 2025 10:00:28 AM'）
+               再退回 pandas 一般 parser
+      3) 若 dtype 無時區 → 視為 Asia/Taipei 後轉成 UTC
+    任何非預期情況，回傳全 NaT 的 Series（不拋例外）。
+    """
+    try:
+        ser = s if isinstance(s, pd.Series) else pd.Series(s)
+    except Exception:
+        return pd.Series([], dtype="datetime64[ns, UTC]")
+
+    ss = ser.astype(str).str.strip()
+    out = pd.Series(pd.NaT, index=ss.index, dtype="datetime64[ns, UTC]")
+
+    # 1) epoch 路徑
+    try:
+        is_epoch = ss.str.match(_EPOCH_RE)
+    except Exception:
+        is_epoch = pd.Series(False, index=ss.index)
+
+    if bool(is_epoch.any()):
+        out.loc[is_epoch] = ss[is_epoch].apply(_epoch_to_utc_ts)
+
+    # 2) 字串日期路徑
+    others_mask = ~is_epoch
+    if bool(others_mask.any()):
+        parsed = None
+        # 2a) 先試 ArcSight 匯出的常見格式：'Oct 23, 2025 10:00:28 AM'
+        try:
+            parsed = pd.to_datetime(
+                ss[others_mask],
+                format="%b %d, %Y %I:%M:%S %p",
+                errors="coerce",
+                utc=False,
+            )
+        except Exception:
+            parsed = None
+
+        # 2b) 若上面全 NaT，再退回一般 parser
+        if (not isinstance(parsed, pd.Series)) or (not parsed.notna().any()):
+            try:
+                parsed = pd.to_datetime(ss[others_mask], errors="coerce", utc=False)
+            except Exception:
+                parsed = None
+
+        # 2c) 只有在 parsed 是 Series 且有成功值時才處理
+        if isinstance(parsed, pd.Series) and bool(parsed.notna().any()):
+            # 關鍵修正：**以 dtype 判斷是否含 tz（整體），而非逐列**
+            tzinfo = getattr(parsed.dt, "tz", None)
+            if tzinfo is not None:
+                # 已有時區 → 直接轉 UTC
+                out.loc[parsed.index] = parsed.dt.tz_convert("UTC")
+            else:
+                # 無時區 → 當作台北時間，再轉 UTC
+                try:
+                    localized = parsed.dt.tz_localize(
+                        ZoneInfo("Asia/Taipei"),
+                        nonexistent="shift_forward",
+                        ambiguous="NaT",
+                    )
+                    out.loc[parsed.index] = localized.dt.tz_convert("UTC")
+                except Exception:
+                    # 最後保底：留 NaT
+                    pass
+
+    return out
 
 
 

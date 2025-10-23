@@ -1,17 +1,92 @@
-print(f"[DEBUG][columns] file={path.name}")
-print(raw.columns.tolist())
+# ---- robust, case-insensitive column picker ----
+from typing import Iterable, Optional
+
+def _norm(s: str) -> str:
+    # 大小寫不敏感、忽略底線與多餘空白
+    return " ".join(s.replace("_", " ").strip().lower().split())
+
+def pick_ci(df: pd.DataFrame, candidates: Iterable[str]) -> Optional[pd.Series]:
+    if df is None or df.empty:
+        return None
+    norm_map = {_norm(c): c for c in df.columns}  # normalized name -> actual name
+    for want in candidates:
+        key = _norm(want)
+        if key in norm_map:
+            return df[norm_map[key]]
+    # 也試試看「單字包含」配對（例如 "timestamp" 能抓到 "event timestamp"）
+    for want in candidates:
+        key = _norm(want)
+        for norm_col, real_col in norm_map.items():
+            if key in norm_col:
+                return df[real_col]
+    return None
 
 
 
 
 
-_EPOCH_RE = re.compile(r"^\d{9,}$")  # 9位以上純數字 → 視為 epoch
+
+
+# --- 強化版：時間欄位擷取 + 多層 fallback ---
+# 1) 先用不分大小寫/底線的方式挑 Start/End/Time/Timestamp
+tcol = pick_ci(raw, COLMAP_TIME)
+
+# 2) 如果沒抓到，嘗試常見變體名稱（避免寫法差異）
+if tcol is None:
+    alt_names = [
+        "event time", "event_time", "event timestamp", "eventtimestamp",
+        "start time", "start_time", "end time", "end_time",
+        "time", "timestamp"
+    ]
+    tcol = pick_ci(raw, alt_names)
+
+# 3) 仍抓不到：看看 raw 裡是不是同時有 Start/End（用其中之一）
+if tcol is None:
+    for guess in ["End Time", "end_time", "Start Time", "start_time"]:
+        if guess in raw.columns:
+            tcol = raw[guess]
+            break
+
+# 4) 真的沒有任何時間欄位 → 用檔案 mtime（UTC）當事件時間
+if tcol is None:
+    df["event_ts"] = pd.to_datetime(datetime.fromtimestamp(path.stat().st_mtime, tz=timezone.utc))
+else:
+    # 寫入前，先偷看三筆原始值（除錯）
+    try:
+        print(f"[DEBUG][sample time] file={path.name}, head={tcol.head(3).tolist()}")
+    except Exception:
+        print(f"[DEBUG][sample time] file={path.name}, head=<unprintable>")
+
+    # 正式轉成 UTC Timestamp（穩健版）
+    ets = to_ts(tcol)
+    # 如果全是 NaT，再退而求其次用 End→Start→mtime
+    if isinstance(ets, pd.Series) and ets.notna().any():
+        df["event_ts"] = ets
+    else:
+        # 再試一次：優先 End Time 其次 Start Time
+        fallback_series = pick_ci(raw, ["End Time", "Start Time"])
+        if fallback_series is not None:
+            ets2 = to_ts(fallback_series)
+            if isinstance(ets2, pd.Series) and ets2.notna().any():
+                df["event_ts"] = ets2
+            else:
+                df["event_ts"] = pd.to_datetime(datetime.fromtimestamp(path.stat().st_mtime, tz=timezone.utc))
+        else:
+            df["event_ts"] = pd.to_datetime(datetime.fromtimestamp(path.stat().st_mtime, tz=timezone.utc))
+
+
+
+
+
+
+
+_EPOCH_RE = re.compile(r"^\d{9,}$")  # 9+ digits => epoch
 
 def _epoch_to_utc_ts(v: float) -> Optional[pd.Timestamp]:
     try:
         v = float(v)
     except Exception:
-        return None
+        return None  # 交由 pandas 轉 NaT
     if v > 1e14:        # ns
         secs = v / 1_000_000_000.0
     elif v > 1e11:      # ms
@@ -20,44 +95,66 @@ def _epoch_to_utc_ts(v: float) -> Optional[pd.Timestamp]:
         secs = v
     return pd.Timestamp(datetime.fromtimestamp(secs, tz=timezone.utc))
 
-def to_ts(s: pd.Series) -> pd.Series:
+def to_ts(s) -> pd.Series:
     """
-    轉成 UTC Timestamp，容錯強。
-    1) 純數字 → epoch
-    2) 含時區 → 轉 UTC
-    3) 無時區 → 視為 Asia/Taipei，再轉 UTC
+    將 Series/array-like 的時間字串/epoch 轉 UTC Timestamp（tz-aware）。
+    規則：
+      1) 純數字 → epoch（自動判斷 s/ms/ns）
+      2) 含時區字串（Z 或 ±HH:MM）→ 直接轉 UTC
+      3) 無時區字串 → 視為 Asia/Taipei 後轉 UTC
+    任何非預期情況，回傳全 NaT 的 Series（不拋例外）。
     """
-    if s is None:
+    try:
+        # 允許 list/ndarray 也能進來
+        ser = s if isinstance(s, pd.Series) else pd.Series(s)
+    except Exception:
+        # 完全無法成 Series，就回空
         return pd.Series([], dtype="datetime64[ns, UTC]")
 
-    ss = s.astype(str).str.strip()
+    ss = ser.astype(str).str.strip()
     out = pd.Series(pd.NaT, index=ss.index, dtype="datetime64[ns, UTC]")
 
-    is_epoch = ss.str.match(_EPOCH_RE)
-    if is_epoch.any():
+    try:
+        is_epoch = ss.str.match(_EPOCH_RE)
+    except Exception:
+        is_epoch = pd.Series(False, index=ss.index)
+
+    # epoch 路徑
+    if bool(is_epoch.any()):
         out.loc[is_epoch] = ss[is_epoch].apply(_epoch_to_utc_ts)
 
+    # 日期字串路徑
     others_mask = ~is_epoch
-    if others_mask.any():
-        # 嘗試解析日期字串
-        parsed = pd.to_datetime(ss[others_mask], errors="coerce", utc=False)
-        # 如果 pandas 回傳的不是 Series（極端錯誤情況）就跳過
-        if not isinstance(parsed, pd.Series):
-            return out
-        # 解析成功再處理
-        if parsed.notna().any():
+    if bool(others_mask.any()):
+        try:
+            parsed = pd.to_datetime(ss[others_mask], errors="coerce", utc=False)
+        except Exception:
+            parsed = None
+
+        if isinstance(parsed, pd.Series) and bool(parsed.notna().any()):
             has_tz_mask = parsed.dt.tz.notna()
             no_tz_mask  = ~has_tz_mask
-            if has_tz_mask.any():
+
+            if bool(has_tz_mask.any()):
                 out.loc[parsed.index[has_tz_mask]] = parsed[has_tz_mask].dt.tz_convert("UTC")
-            if no_tz_mask.any():
-                localized = parsed[no_tz_mask].dt.tz_localize(
-                    ZoneInfo("Asia/Taipei"),
-                    nonexistent="shift_forward",
-                    ambiguous="NaT",
-                )
-                out.loc[parsed.index[no_tz_mask]] = localized.dt.tz_convert("UTC")
+
+            if bool(no_tz_mask.any()):
+                try:
+                    localized = parsed[no_tz_mask].dt.tz_localize(
+                        ZoneInfo("Asia/Taipei"),
+                        nonexistent="shift_forward",
+                        ambiguous="NaT",
+                    )
+                    out.loc[parsed.index[no_tz_mask]] = localized.dt.tz_convert("UTC")
+                except Exception:
+                    # 最後保底：沒辦法就留 NaT
+                    pass
+
     return out
+
+
+
+
 
 
 

@@ -18,7 +18,7 @@ from(bucket: "SOC")
   |> group(columns: ["device_name"])          // 想要總和就改成 group(columns: ["_field"])
   |> keep(columns: ["_time","_value","device_name"])
   |> yield(name: "FW_events_per_min")
-
+|> aggregateWindow(every: 5m, fn: sum, createEmpty: false) 
 
 
 面板 2：WAF 每分鐘事件量
@@ -63,3 +63,4 @@ from(bucket: "SOC")
   |> group(columns: ["device_name"])
   |> keep(columns: ["_time","_value","device_name"])
   |> yield(name: "RADWARE_events_per_min")
+

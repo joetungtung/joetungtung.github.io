@@ -1,80 +1,48 @@
-# ======== Robust checkpoint (SQLite) ========
-import sqlite3, hashlib, time
 from pathlib import Path
 
-# 1) 確保 DB 固定放在程式同資料夾，不受目前工作目錄影響
-STATE_DB = Path(__file__).with_name("import_state.sqlite")
+def main(input_dir: str = "downloads", only_new: bool = True, check_hash: bool = False):
+    """
+    input_dir : 要匯入的 CSV 資料夾
+    only_new  : True = 只匯入沒匯過的檔案
+    check_hash: True = 比對檔案內容 SHA1（最保險，但略慢）
+    """
 
-def _state_db():
-    STATE_DB.parent.mkdir(parents=True, exist_ok=True)
-    conn = sqlite3.connect(STATE_DB)
-    conn.execute("""
-    CREATE TABLE IF NOT EXISTS files (
-        path TEXT PRIMARY KEY,      -- 使用『絕對路徑』字串
-        size INTEGER,
-        mtime_ns INTEGER,
-        sha1 TEXT,
-        rows_written INTEGER,
-        last_seen INTEGER
-    )
-    """)
-    return conn
+    root = Path(input_dir)
+    if not root.exists():
+        print(f"[ERROR] ❌ 找不到資料夾: {root}")
+        return
 
-def _key(p: Path) -> str:
-    # 2) 以「絕對路徑」作為主鍵，避免相對路徑/分隔符差異
-    try:
-        return str(p.resolve())
-    except Exception:
-        return str(p.absolute())
+    total_rows = 0
+    print(f"📁 掃描資料夾：{root.resolve()}")
 
-def file_sha1(p: Path, block=1024*1024) -> str:
-    h = hashlib.sha1()
-    with p.open("rb") as f:
-        while True:
-            b = f.read(block)
-            if not b: break
-            h.update(b)
-    return h.hexdigest()
+    # 依序處理所有 CSV 檔
+    for path in sorted(root.glob("*.csv")):
 
-def already_imported(p: Path, *, use_hash: bool = False) -> bool:
-    st = p.stat()
-    key = _key(p)
-    conn = _state_db()
-    cur = conn.execute("SELECT size, mtime_ns, sha1 FROM files WHERE path=?", (key,))
-    row = cur.fetchone()
-    conn.close()
+        # ✅ 1. 檢查是否已匯入過（如果沒有變更就跳過）
+        if only_new and already_imported(path, use_hash=check_hash):
+            print(f"[SKIP] {path.name} (已匯入且未變更)")
+            continue
 
-    if not row:
-        # 偵錯：第一次看到此檔
-        print(f"[CKPT] first time seen: {p.name}")
-        return False
+        try:
+            # ✅ 2. 讀取並解析 CSV
+            df = parse_csv_generic(path)
+            if df is None or df.empty:
+                print(f"[WARN] 空檔案或無資料：{path.name}")
+                continue
 
-    size, mtime_ns, sha1 = row
+            rows = len(df)
 
-    # 檔案大小或 mtime 有變 → 視為新檔
-    if st.st_size != size or st.st_mtime_ns != mtime_ns:
-        print(f"[CKPT] changed: {p.name} (size/mtime differ)")
-        return False
+            # ✅ 3. 寫入 InfluxDB
+            write_to_influx(cli, BUCKET, MEASUREMENT, df)
+            total_rows += rows
 
-    # 若開啟 use_hash → 內容比對
-    if use_hash:
-        cur_sha = file_sha1(p)
-        if sha1 != cur_sha:
-            print(f"[CKPT] changed: {p.name} (sha1 differ)")
-            return False
+            # ✅ 4. 匯入成功 → 記錄狀態（下次跳過）
+            record_success(path, rows_written=rows, save_hash=check_hash)
+            print(f"[OK] ✅ 匯入成功：{path.name} ({rows} 筆)")
 
-    print(f"[CKPT] unchanged: {p.name} → SKIP")
-    return True
+        except Exception as e:
+            import traceback; traceback.print_exc()
+            print(f"[ERROR] 匯入失敗：{path.name} ({e})")
+            continue
 
-def record_success(p: Path, rows_written: int, *, save_hash: bool = False):
-    st = p.stat()
-    key = _key(p)
-    sha1 = file_sha1(p) if save_hash else None
-    conn = _state_db()
-    conn.execute(
-        "INSERT OR REPLACE INTO files(path,size,mtime_ns,sha1,rows_written,last_seen) VALUES (?,?,?,?,?,?)",
-        (key, st.st_size, st.st_mtime_ns, sha1, rows_written, int(time.time()))
-    )
-    conn.commit()
-    conn.close()
-    print(f"[CKPT] recorded: {p.name} rows={rows_written}, sha={'yes' if save_hash else 'no'}")
+    print(f"[SUMMARY] ✨ 匯入完成，共 {total_rows} 筆")

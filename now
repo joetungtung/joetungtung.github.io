@@ -1,30 +1,29 @@
-from pathlib import Path
-
-def main(input_dir: str = "downloads", only_new: bool = True, check_hash: bool = False):
-    """
-    input_dir : 要匯入的 CSV 資料夾
-    only_new  : True = 只匯入沒匯過的檔案
-    check_hash: True = 比對檔案內容 SHA1（最保險，但略慢）
-    """
-
-    root = Path(input_dir)
-    if not root.exists():
-        print(f"[ERROR] ❌ 找不到資料夾: {root}")
-        return
-
-    total_rows = 0
     print(f"📁 掃描資料夾：{root.resolve()}")
 
-    # 依序處理所有 CSV 檔
-    for path in sorted(root.glob("*.csv")):
+    # ---- 找檔案：遞迴 + 不分大小寫 .csv ----
+    files = [p for p in root.rglob("*") if p.is_file() and p.suffix.lower() == ".csv"]
 
-        # ✅ 1. 檢查是否已匯入過（如果沒有變更就跳過）
+    # 除錯：印出找到幾個檔案與前 5 個檔名
+    print(f"[DEBUG] found {len(files)} CSV files under {root}")
+    if len(files) > 0:
+        print("[DEBUG] sample:", [p.name for p in files[:5]])
+
+    if not files:
+        print("[WARN] 這個資料夾（含子資料夾）找不到任何 .csv 檔；請確認路徑或副檔名。")
+        print("       若檔案在子資料夾（WAF/FW/RADWARE），這段已經會遞迴掃描，正常會找到。")
+        return
+
+    # 依序處理檔案（可先讓較新的在前面）
+    files.sort(key=lambda p: p.stat().st_mtime_ns)
+
+    for path in files:
+        # ✅ 1) 已匯入且未變更 → 跳過
         if only_new and already_imported(path, use_hash=check_hash):
             print(f"[SKIP] {path.name} (已匯入且未變更)")
             continue
 
         try:
-            # ✅ 2. 讀取並解析 CSV
+            # ✅ 2) 解析
             df = parse_csv_generic(path)
             if df is None or df.empty:
                 print(f"[WARN] 空檔案或無資料：{path.name}")
@@ -32,17 +31,15 @@ def main(input_dir: str = "downloads", only_new: bool = True, check_hash: bool =
 
             rows = len(df)
 
-            # ✅ 3. 寫入 InfluxDB
+            # ✅ 3) 寫入
             write_to_influx(cli, BUCKET, MEASUREMENT, df)
             total_rows += rows
 
-            # ✅ 4. 匯入成功 → 記錄狀態（下次跳過）
+            # ✅ 4) 記錄成功（下次跳過）
             record_success(path, rows_written=rows, save_hash=check_hash)
-            print(f"[OK] ✅ 匯入成功：{path.name} ({rows} 筆)")
+            print(f"[OK] 匯入成功：{path.name} ({rows} 筆)")
 
         except Exception as e:
             import traceback; traceback.print_exc()
             print(f"[ERROR] 匯入失敗：{path.name} ({e})")
             continue
-
-    print(f"[SUMMARY] ✨ 匯入完成，共 {total_rows} 筆")

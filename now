@@ -1,686 +1,90 @@
-# -*- coding: utf-8 -*-
-import os
-from pathlib import Path
-import pandas as pd
-from dateutil import parser as dt
-from datetime import datetime, timezone
-from typing import Optional
-from influxdb_client import InfluxDBClient
-from influxdb_client.client.write_api import SYNCHRONOUS, WriteOptions
-from zoneinfo import ZoneInfo
-import re
-import numpy as np
-import logging
-logging.basicConfig(level=logging.INFO)
-logging.getLogger("influxdb_client.client.write").setLevel(logging.DEBUG)
-logging.getLogger("urllib3").setLevel(logging.WARNING)
-
-
-# ========= Influx 連線 =========
-INFLUX_URL = "http://127.0.0.1:8086"
-ORG        = "LINE BANK SOC"
-BUCKET     = "SOC"
-TOKEN      = "TUNNT9zHsfHU2nFhjxL63i8HMpqLpSGv5J5hzrq9x-79DAxmTaOv5EbAr31OZaaz1zVrN1PjG4paGZJuvII57Q=="
-MEAS       = "arcsight_event"   # 你原本就用這個
-
-# ========= 檔案來源 =========
-DOWNLOAD_ROOT = Path("downloads")
-SOURCES = [
-    {"key": "radware", "dir": DOWNLOAD_ROOT / "Radware"},
-    {"key": "fw",      "dir": DOWNLOAD_ROOT / "FW"},
-    {"key": "waf",     "dir": DOWNLOAD_ROOT / "WAF"},
-    # {"key": "apexone","dir": DOWNLOAD_ROOT / "ApexOne"},  # 之後開
-]
-
-# ========= 欄位對應（候選名，依你們 CSV 實際欄名修改）=========
-# 時間：用 End Time，沒有再退回 Start Time
-COLMAP_TIME        = ["End Time", "Start Time", "Time", "Timestamp", "event_time"]
-
-# IP
-COLMAP_SRCIP       = ["Attacker Address", "SrcIP", "SourceIP", "client_ip"]
-COLMAP_DSTIP       = ["Target Address",   "DstIP", "DestinationIP", "server_ip"]
-
-# 動作、嚴重度
-COLMAP_ACTION      = ["Device Action", "Action", "decision", "Result"]
-COLMAP_SEVERITY    = ["Agent Severity", "Severity", "level", "Priority"]
-
-# 國家（FW 沒有國家，Radware/WAF 有）
-COLMAP_SRCCOUNTRY  = ["Attacker Geo Country Name", "SrcCountry", "client_country"]
-COLMAP_DSTCOUNTRY  = ["Target Geo Country Name",   "DstCountry", "server_country"]
-
-
-
-EXTRA_TAG_CANDIDATES = {
-    # 共同常見
-    "protocol":       ["Transport Protocol", "Protocol"],
-    "app_protocol":   ["Application Protocol"],
-    "rule_name":      ["Name", "Rule Name", "Policy Name"],
-    "device_vendor":  ["Device Vendor", "Vendor"],
-    "device_name":    ["Device Host Name", "Hostname", "Device Name"],
-    "agent_type":     ["Agent Type"],
-    "agent_name":     ["Agent Name"],
-
-    # FW 專用
-    "device_in_if":   ["Device Inbound Interface",  "Ingress Interface", "In Interface"],
-    "device_out_if":  ["Device Outbound Interface", "Egress Interface",  "Out Interface"],
-}
-
-
-
-TAG_COLS = [
-    "product","device_action","severity",
-    "attacker_geo_country_name","target_geo_country_name",
-    "protocol","app_protocol","rule_name","device_vendor","device_name",
-    "agent_type","agent_name","device_in_if","device_out_if"
-]
-
-
-
-EXTRA_FIELD_CANDIDATES = {
-    # 數值（可 sum/avg）
-    "bytes_in":   ["Bytes In",  "bytes_in",  "tx_bytes"],
-    "bytes_out":  ["Bytes Out", "bytes_out", "rx_bytes"],
-    "src_port":   ["Attacker Port", "Src Port", "Source Port"],
-    "dst_port":   ["Target Port",   "Dst Port", "Destination Port"],
-    "flex_num1":  ["Flex Number1"],
-
-    # 高基數（避免做 tag）
-    "message":        ["Message"],
-    "request_url":    ["Request Url", "URL"],
-    "request_method": ["Request Method"],
-    "file_path":      ["File Path"],
-    "device_address": ["Device Address"],
-}
-
-
-
-
-# ======== Robust checkpoint (SQLite) ========
-import sqlite3, hashlib, time
-from pathlib import Path
-
-# 1) 確保 DB 固定放在程式同資料夾，不受目前工作目錄影響
-STATE_DB = Path(__file__).with_name("import_state.sqlite")
-
-def _state_db():
-    STATE_DB.parent.mkdir(parents=True, exist_ok=True)
-    conn = sqlite3.connect(STATE_DB)
-    conn.execute("""
-    CREATE TABLE IF NOT EXISTS files (
-        path TEXT PRIMARY KEY,      -- 使用『絕對路徑』字串
-        size INTEGER,
-        mtime_ns INTEGER,
-        sha1 TEXT,
-        rows_written INTEGER,
-        last_seen INTEGER
-    )
-    """)
-    return conn
-
-def _key(p: Path) -> str:
-    # 2) 以「絕對路徑」作為主鍵，避免相對路徑/分隔符差異
-    try:
-        return str(p.resolve())
-    except Exception:
-        return str(p.absolute())
-
-def file_sha1(p: Path, block=1024*1024) -> str:
-    h = hashlib.sha1()
-    with p.open("rb") as f:
-        while True:
-            b = f.read(block)
-            if not b: break
-            h.update(b)
-    return h.hexdigest()
-
-def already_imported(p: Path, *, use_hash: bool = False) -> bool:
-    st = p.stat()
-    key = _key(p)
-    conn = _state_db()
-    cur = conn.execute("SELECT size, mtime_ns, sha1 FROM files WHERE path=?", (key,))
-    row = cur.fetchone()
-    conn.close()
-
-    if not row:
-        # 偵錯：第一次看到此檔
-        print(f"[CKPT] first time seen: {p.name}")
-        return False
-
-    size, mtime_ns, sha1 = row
-
-    # 檔案大小或 mtime 有變 → 視為新檔
-    if st.st_size != size or st.st_mtime_ns != mtime_ns:
-        print(f"[CKPT] changed: {p.name} (size/mtime differ)")
-        return False
-
-    # 若開啟 use_hash → 內容比對
-    if use_hash:
-        cur_sha = file_sha1(p)
-        if sha1 != cur_sha:
-            print(f"[CKPT] changed: {p.name} (sha1 differ)")
-            return False
-
-    print(f"[CKPT] unchanged: {p.name} → SKIP")
-    return True
-
-def record_success(p: Path, rows_written: int, *, save_hash: bool = False):
-    st = p.stat()
-    key = _key(p)
-    sha1 = file_sha1(p) if save_hash else None
-    conn = _state_db()
-    conn.execute(
-        "INSERT OR REPLACE INTO files(path,size,mtime_ns,sha1,rows_written,last_seen) VALUES (?,?,?,?,?,?)",
-        (key, st.st_size, st.st_mtime_ns, sha1, rows_written, int(time.time()))
-    )
-    conn.commit()
-    conn.close()
-    print(f"[CKPT] recorded: {p.name} rows={rows_written}, sha={'yes' if save_hash else 'no'}")
-
-
-
-
-# ========= 你現有的修補函式（地理補點）=========
-# 照你們之前檔案的匯入方式
-try:
-    from geo_fixes import apply_geo_fixes_df
-except Exception:
-    # 若檔名不同，改成你實際的模組/函式
-    def apply_geo_fixes_df(df: pd.DataFrame) -> pd.DataFrame:
-        return df  # 先不做事，避免匯入失敗
-
-# ========= 小工具 =========
-def pick(raw: pd.DataFrame, names: list):
-    """回傳第一個存在於 raw 的欄位 Series，若都沒有回傳 None"""
-    for n in names:
-        if n in raw.columns:
-            return raw[n]
-    return None
-
-
-
-# ---- robust, case-insensitive column picker ----
-from typing import Iterable, Optional
-
-def _norm(s: str) -> str:
-    # 大小寫不敏感、忽略底線與多餘空白
-    return " ".join(s.replace("_", " ").strip().lower().split())
-
-def pick_ci(df: pd.DataFrame, candidates: Iterable[str]) -> Optional[pd.Series]:
-    if df is None or df.empty:
-        return None
-    norm_map = {_norm(c): c for c in df.columns}  # normalized name -> actual name
-    for want in candidates:
-        key = _norm(want)
-        if key in norm_map:
-            return df[norm_map[key]]
-    # 也試試看「單字包含」配對（例如 "timestamp" 能抓到 "event timestamp"）
-    for want in candidates:
-        key = _norm(want)
-        for norm_col, real_col in norm_map.items():
-            if key in norm_col:
-                return df[real_col]
-    return None
-
-
-
-_EPOCH_RE = re.compile(r"^\d{9,}$")  # 9+ digits => epoch
-
-def _epoch_to_utc_ts(v: float) -> Optional[pd.Timestamp]:
-    try:
-        v = float(v)
-    except Exception:
-        return None  # 交由 pandas 轉 NaT
-    if v > 1e14:        # ns
-        secs = v / 1_000_000_000.0
-    elif v > 1e11:      # ms
-        secs = v / 1_000.0
-    else:               # s
-        secs = v
-    return pd.Timestamp(datetime.fromtimestamp(secs, tz=timezone.utc))
-
-def to_ts(s) -> pd.Series:
-    """
-    將 Series/array-like 的時間字串/epoch 轉 UTC Timestamp（tz-aware）。
-      1) 純數字 → epoch（自動判斷 s/ms/ns）
-      2) 字串：先嘗試 '%b %d, %Y %I:%M:%S %p'（如 'Oct 23, 2025 10:00:28 AM'）
-               再退回 pandas 一般 parser
-      3) 若 dtype 無時區 → 視為 Asia/Taipei 後轉成 UTC
-    任何非預期情況，回傳全 NaT 的 Series（不拋例外）。
-    """
-    try:
-        ser = s if isinstance(s, pd.Series) else pd.Series(s)
-    except Exception:
-        return pd.Series([], dtype="datetime64[ns, UTC]")
-
-    ss = ser.astype(str).str.strip()
-    out = pd.Series(pd.NaT, index=ss.index, dtype="datetime64[ns, UTC]")
-
-    # 1) epoch 路徑
-    try:
-        is_epoch = ss.str.match(_EPOCH_RE)
-    except Exception:
-        is_epoch = pd.Series(False, index=ss.index)
-
-    if bool(is_epoch.any()):
-        out.loc[is_epoch] = ss[is_epoch].apply(_epoch_to_utc_ts)
-
-    # 2) 字串日期路徑
-    others_mask = ~is_epoch
-    if bool(others_mask.any()):
-        parsed = None
-        # 2a) 先試 ArcSight 匯出的常見格式：'Oct 23, 2025 10:00:28 AM'
-        try:
-            parsed = pd.to_datetime(
-                ss[others_mask],
-                format="%b %d, %Y %I:%M:%S %p",
-                errors="coerce",
-                utc=False,
-            )
-        except Exception:
-            parsed = None
-
-        # 2b) 若上面全 NaT，再退回一般 parser
-        if (not isinstance(parsed, pd.Series)) or (not parsed.notna().any()):
-            try:
-                parsed = pd.to_datetime(ss[others_mask], errors="coerce", utc=False)
-            except Exception:
-                parsed = None
-
-        # 2c) 只有在 parsed 是 Series 且有成功值時才處理
-        if isinstance(parsed, pd.Series) and bool(parsed.notna().any()):
-            # 關鍵修正：**以 dtype 判斷是否含 tz（整體），而非逐列**
-            tzinfo = getattr(parsed.dt, "tz", None)
-            if tzinfo is not None:
-                # 已有時區 → 直接轉 UTC
-                out.loc[parsed.index] = parsed.dt.tz_convert("UTC")
-            else:
-                # 無時區 → 當作台北時間，再轉 UTC
-                try:
-                    localized = parsed.dt.tz_localize(
-                        ZoneInfo("Asia/Taipei"),
-                        nonexistent="shift_forward",
-                        ambiguous="NaT",
-                    )
-                    out.loc[parsed.index] = localized.dt.tz_convert("UTC")
-                except Exception:
-                    # 最後保底：留 NaT
-                    pass
-
-    return out
-
-
-def ensure_common_cols(df: pd.DataFrame) -> pd.DataFrame:
-    common = [
-        "event_ts","src_ip","dst_ip","device_action","severity","count",
-        "attacker_geo_country_name","target_geo_country_name",
-        "src_lat","src_lon","dst_lat","dst_lon"
-    ]
-    for c in common:
-        if c not in df.columns:
-            df[c] = pd.NA
-    if "count" in df.columns:
-        try:
-            df["count"] = pd.to_numeric(df["count"], errors="coerce").fillna(1).astype("Int64")
-        except Exception:
-            df["count"] = 1
-    else:
-        df["count"] = 1
-    return df
-
-def parse_csv_generic(path: Path, product_key: str) -> pd.DataFrame:
-    raw = pd.read_csv(path)
-    print(f"[DEBUG][columns] file={path.name}")
-    print(raw.columns.tolist())
-    raw.columns = (
-        raw.columns
-            .astype(str)
-            .str.replace("\ufeff", "", regex=False)  # 去掉 BOM
-            .str.strip()  # 去頭尾空白
-    )
-    df = pd.DataFrame()
-
-    # --- 強化版：時間欄位擷取 + 多層 fallback ---
-    # 1) 先用不分大小寫/底線的方式挑 Start/End/Time/Timestamp
-    tcol = pick_ci(raw, COLMAP_TIME)
-
-    # 2) 如果沒抓到，嘗試常見變體名稱（避免寫法差異）
-    if tcol is None:
-        alt_names = [
-            "event time", "event_time", "event timestamp", "eventtimestamp",
-            "start time", "start_time", "end time", "end_time",
-            "time", "timestamp"
-        ]
-        tcol = pick_ci(raw, alt_names)
-
-    # 3) 仍抓不到：看看 raw 裡是不是同時有 Start/End（用其中之一）
-    if tcol is None:
-        for guess in ["End Time", "end_time", "Start Time", "start_time"]:
-            if guess in raw.columns:
-                tcol = raw[guess]
-                break
-
-    # 4) 真的沒有任何時間欄位 → 用檔案 mtime（UTC）當事件時間
-    if tcol is None:
-        df["event_ts"] = pd.to_datetime(datetime.fromtimestamp(path.stat().st_mtime, tz=timezone.utc))
-    else:
-        # 寫入前，先偷看三筆原始值（除錯）
-        try:
-            print(f"[DEBUG][sample time] file={path.name}, head={tcol.head(3).tolist()}")
-        except Exception:
-            print(f"[DEBUG][sample time] file={path.name}, head=<unprintable>")
-
-        # 正式轉成 UTC Timestamp（穩健版）
-        ets = to_ts(tcol)
-        # 如果全是 NaT，再退而求其次用 End→Start→mtime
-        if isinstance(ets, pd.Series) and ets.notna().any():
-            df["event_ts"] = ets
-        else:
-            # 再試一次：優先 End Time 其次 Start Time
-            fallback_series = pick_ci(raw, ["End Time", "Start Time"])
-            if fallback_series is not None:
-                ets2 = to_ts(fallback_series)
-                if isinstance(ets2, pd.Series) and ets2.notna().any():
-                    df["event_ts"] = ets2
-                else:
-                    df["event_ts"] = pd.to_datetime(datetime.fromtimestamp(path.stat().st_mtime, tz=timezone.utc))
-            else:
-                df["event_ts"] = pd.to_datetime(datetime.fromtimestamp(path.stat().st_mtime, tz=timezone.utc))
-
-    # 基本欄位
-    df["src_ip"]   = pick(raw, COLMAP_SRCIP)
-    df["dst_ip"]   = pick(raw, COLMAP_DSTIP)
-    df["device_action"] = pick(raw, COLMAP_ACTION)
-    df["severity"] = pick(raw, COLMAP_SEVERITY)
-
-    df["attacker_geo_country_name"] = pick(raw, COLMAP_SRCCOUNTRY)
-    df["target_geo_country_name"]   = pick(raw, COLMAP_DSTCOUNTRY)
-
-    df = ensure_common_cols(df)
-
-    # ---- 額外 TAGS ----
-    for out_col, candidates in EXTRA_TAG_CANDIDATES.items():
-        s = pick(raw, candidates)
-        if s is not None:
-            df[out_col] = s.astype("string")
-
-    # ---- 額外 FIELDS ----
-    for out_col, candidates in EXTRA_FIELD_CANDIDATES.items():
-        s = pick(raw, candidates)
-        if s is not None:
-            # 嘗試轉成數值；轉不動就保留字串（例如 URL）
-            num = pd.to_numeric(s, errors="coerce")
-            if num.notna().any():  # 裡面有數字
-                df[out_col] = num
-            else:
-                df[out_col] = s.astype("string")
-
-    # 附加欄：產品
-    df["product"] = product_key
-
-    # 清掉完全沒時間的列
-    df = df[~df["event_ts"].isna()].copy()
-
-    return df
-
-def _sanitize_for_influx(df: pd.DataFrame) -> pd.DataFrame:
-    df = df.copy()
-
-    # 1) 把 pandas 的 pd.NA/NaN 全部換成 None（Influx 不吃 pd.NA）
-    df = df.where(pd.notna(df), None)
-
-    # 2) tag 欄位用 object，保留 None（不要變字串 'None'）
-    for c in TAG_COLS:
-        if c in df.columns:
-            df[c] = df[c].astype(object)
-
-    # 3) 可空布林 dtype -> object，避免 "boolean value of NA is ambiguous"
-    for c in df.select_dtypes(include="boolean").columns:
-        df[c] = df[c].astype(object)
-
-    return df
-
-
-def fix_influx_type_conflicts(df: pd.DataFrame):
-    for col in df.columns:
-        if df[col].dtype == object:  # 文字欄位
-            # 針對 "passed", "blocked" 等關鍵字避免被當成 boolean
-            df[col] = df[col].astype(str)
-        elif df[col].dtype == bool:
-            # Boolean 轉成字串 "true"/"false"
-            df[col] = df[col].apply(lambda x: "true" if x else "false")
-    return df
-
 def write_to_influx(df: pd.DataFrame) -> bool:
-    if df.empty:
+    """
+    僅寫入：
+      - time: event_ts (tz-aware UTC)
+      - tags: TAG_COLS 中有的欄位（全部轉字串；缺值用 None）
+      - fields: bytes_in/bytes_out/src_port/dst_port/flex_num1/count（全部 float64）
+    並移除一切 pd.NA/np.nan/布林 dtype，避免 400 / NA ambiguous。
+    """
+    if df is None or df.empty:
         print("[INFO] nothing to write.")
         return True
+
     try:
-        safe_numeric_fields = ["bytes_in","bytes_out","src_port","dst_port","flex_num1","count"]
+        SAFE_FIELDS = ["bytes_in","bytes_out","src_port","dst_port","flex_num1","count"]
 
-        # —— 只留安全欄位（時間 + tags + 數值欄位）——
-        keep_cols = (["event_ts"]
-                     + [c for c in TAG_COLS if c in df.columns]
-                     + [c for c in safe_numeric_fields if c in df.columns])
-        df = df.loc[:, [c for c in keep_cols if c in df.columns]].copy()
+        # 只留需要的欄位
+        keep = (["event_ts"]
+                + [c for c in TAG_COLS if c in df.columns]
+                + [c for c in SAFE_FIELDS if c in df.columns])
+        df = df.loc[:, [c for c in keep if c in df.columns]].copy()
 
-        # 數值欄位轉數字
-        for c in safe_numeric_fields:
-            if c in df.columns:
-                df[c] = pd.to_numeric(df[c], errors="coerce")
-
-        # —— 保證至少有一個 field 可寫 ——（⚠️取代原本的 dropna）
-        if not any(c in df.columns for c in safe_numeric_fields):
-            df["count"] = 1.0
-        else:
-            # 這些列的所有數值欄位都是 NaN → 給它 count=1 當保底
-            mask_all_nan = df[[c for c in safe_numeric_fields if c in df.columns]].isna().all(axis=1)
-            if mask_all_nan.any():
-                df.loc[mask_all_nan, "count"] = 1.0
-
-        # 時間正規化（仍建議保留）
+        # --- 時間欄位 ---
         df["event_ts"] = pd.to_datetime(df["event_ts"], errors="coerce", utc=True)
         df = df[~df["event_ts"].isna()].copy()
+        if df.empty:
+            print("[WARN] all rows have invalid event_ts → skip write")
+            return True
 
-        # 統一數值欄位型別（避免 field type 衝突）
-        numeric_fields = ["bytes_in", "bytes_out", "src_port", "dst_port", "flex_num1", "count"]
-        for c in numeric_fields:
+        # --- 數值欄位：全部轉成 float64，轉不動的變 NaN，之後補上 count=1 ---
+        for c in SAFE_FIELDS:
             if c in df.columns:
                 df[c] = pd.to_numeric(df[c], errors="coerce").astype("float64")
 
-        # --- 統一可疑欄位為字串，避免 invalid boolean 問題 ---
-        force_string_fields = [
-            "device_action", "severity", "rule_name",
-            "agent_type", "agent_name",
-            "protocol", "app_protocol",
-        ]
-        for c in force_string_fields:
-            if c in df.columns:
-                df[c] = df[c].astype(str)
+        if not any(c in df.columns for c in SAFE_FIELDS):
+            df["count"] = 1.0
+        else:
+            # 若所有數值欄都是 NaN → 補 count=1
+            num_cols = [c for c in SAFE_FIELDS if c in df.columns]
+            mask_all_nan = df[num_cols].isna().all(axis=1)
+            if mask_all_nan.any():
+                df.loc[mask_all_nan, "count"] = 1.0
 
-        # Influx 友善清洗（一定保留）
-        df = _sanitize_for_influx(df)
+        # --- 標籤欄位：一律轉成「字串或 None」；禁止布林 dtype / pd.NA ---
+        for c in [c for c in TAG_COLS if c in df.columns]:
+            # 先把 pd.NA/NaN 變成 None
+            df[c] = df[c].astype(object)
+            df.loc[pd.isna(df[c]), c] = None
+            # 其他值一律轉字串
+            df[c] = df[c].apply(lambda x: (str(x) if x is not None else None))
 
-        # —— 分批同步寫入（最穩）——
+        # --- 全表再做一次保險：把任何殘留的 pd.NA / np.nan 變 None，移除布林 dtype ---
+        df = df.astype(object).where(pd.notna(df), None)
+        for c in df.columns:
+            if pd.api.types.is_bool_dtype(df[c]):
+                df[c] = df[c].apply(lambda x: "true" if bool(x) else "false")
+
+        # --- 寫入（分批） ---
         from math import ceil
-        BATCH_SIZE = 10_000
+        BATCH = 10_000
         with InfluxDBClient(url=INFLUX_URL, org=ORG, token=TOKEN, timeout=300_000) as cli:
             w = cli.write_api(write_options=SYNCHRONOUS)
-            total = len(df); batches = ceil(total / BATCH_SIZE)
+            total = len(df); batches = ceil(total / BATCH)
+            tag_cols = [c for c in TAG_COLS if c in df.columns]
+
             for i in range(batches):
-                chunk = df.iloc[i*BATCH_SIZE:(i+1)*BATCH_SIZE]
-                w.write(
-                    bucket=BUCKET,
-                    org=ORG,
-                    record=chunk,
-                    data_frame_measurement_name=MEAS,
-                    data_frame_tag_columns=[c for c in TAG_COLS if c in chunk.columns],
-                    data_frame_timestamp_column="event_ts",
-                )
-                print(f"[OK] wrote chunk {i+1}/{batches} rows={len(chunk)}")
+                chunk = df.iloc[i*BATCH:(i+1)*BATCH]
+
+                try:
+                    w.write(
+                        bucket=BUCKET,
+                        org=ORG,
+                        record=chunk,
+                        data_frame_measurement_name=MEAS,
+                        data_frame_tag_columns=tag_cols,
+                        data_frame_timestamp_column="event_ts",
+                    )
+                    print(f"[OK] wrote chunk {i+1}/{batches} rows={len(chunk)}")
+                except Exception as e:
+                    # 400 時把第一行序列化內容印出來方便定位
+                    import traceback; traceback.print_exc()
+                    print("[DEBUG] failed chunk head(1) as dict:", chunk.head(1).to_dict(orient="records"))
+                    raise
+
         print(f"[OK] wrote total {len(df)} rows to {BUCKET}/{MEAS}")
         return True
+
     except Exception as e:
         import traceback; traceback.print_exc()
         print(f"[ERROR] write influx failed: {e}")
         return False
-
-
-
-def detect_product_key(p: Path) -> str:
-    """依檔名/路徑自動判斷產品別：radware / waf / fw（全小寫）"""
-    name = p.name.lower()
-    parts = [seg.lower() for seg in p.parts] + [name]
-
-    # Radware / DefensePro
-    if any(("radware" in seg) or ("defensepro" in seg) for seg in parts):
-        return "radware"
-
-    # WAF（依你檔名長相，也可加 imperva 等關鍵字）
-    if any(("waf" in seg) or ("imperva" in seg) for seg in parts):
-        return "waf"
-
-    # FW（防火牆；你檔名看起來有 "FW"）
-    if any((" fw" in seg) or seg.startswith("fw") or ("firewall" in seg) for seg in [f" {name}"] + parts):
-        return "fw"
-
-    return "unknown"
-
-
-
-def main(input_dir="downloads", only_new=True, check_hash= False,cli=None, bucket="SOC", measurement="arcsight_event"):
-    """
-    input_dir : 要匯入的 CSV 資料夾
-    only_new  : True = 只匯入沒匯過的檔案
-    check_hash: True = 比對檔案內容 SHA1（最保險，但略慢）
-    """
-
-
-    root = Path(input_dir)
-    if not root.exists():
-        print(f"[ERROR] ❌ 找不到資料夾: {root}")
-        return
-
-    total_rows = 0
-    print(f"📁 掃描資料夾：{root.resolve()}")
-
-    # ---- 找檔案：遞迴 + 不分大小寫 .csv ----
-    files = [p for p in root.rglob("*") if p.is_file() and p.suffix.lower() == ".csv"]
-
-    # 除錯：印出找到幾個檔案與前 5 個檔名
-    print(f"[DEBUG] found {len(files)} CSV files under {root}")
-    if len(files) > 0:
-        print("[DEBUG] sample:", [p.name for p in files[:5]])
-
-    if not files:
-        print("[WARN] 這個資料夾（含子資料夾）找不到任何 .csv 檔；請確認路徑或副檔名。")
-        print("       若檔案在子資料夾（WAF/FW/RADWARE），這段已經會遞迴掃描，正常會找到。")
-        return
-
-    # 依序處理檔案（可先讓較新的在前面）
-    files.sort(key=lambda p: p.stat().st_mtime_ns)
-
-    for path in files:
-        # 已匯入且未變更 → 跳過
-        if only_new and already_imported(path, use_hash=check_hash):
-            print(f"[SKIP] {path.name} (已匯入且未變更)")
-            continue
-
-        try:
-            # ★ 先判斷產品別，傳給 parser
-            product_key = detect_product_key(path)
-            if product_key == "unknown":
-                print(f"[WARN] 無法判斷產品別，先跳過：{path.name}")
-                continue
-
-            # 這裡改成帶 product_key
-            df = parse_csv_generic(path, product_key=product_key)
-
-            if df is None or df.empty:
-                print(f"[WARN] 空檔案或無資料：{path.name}")
-                continue
-
-            rows = len(df)
-            write_to_influx(cli, BUCKET, MEASUREMENT, df)
-            total_rows += rows
-
-            record_success(path, rows_written=rows, save_hash=check_hash)
-            print(f"[OK] 匯入成功：{path.name} ({product_key}, {rows} 筆)")
-
-        except Exception as e:
-            import traceback;
-            traceback.print_exc()
-            print(f"[ERROR] 匯入失敗：{path.name} ({e})")
-            continue
-
-    print(f"[SUMMARY] ✨ 匯入完成，共 {total_rows} 筆")
-
-def smoke_test_influx():
-    from influxdb_client import InfluxDBClient
-    from influxdb_client.client.write_api import SYNCHRONOUS
-    import pandas as pd
-    from datetime import datetime, timezone
-
-    test = pd.DataFrame([{
-        "event_ts": pd.Timestamp(datetime.now(timezone.utc)),
-        "product": "smoke",
-        "count": 1
-    }])
-    try:
-        with InfluxDBClient(url=INFLUX_URL, org=ORG, token=TOKEN, timeout=60000) as cli:
-            w = cli.write_api(write_options=SYNCHRONOUS)
-            w.write(
-                bucket=BUCKET, org=ORG, record=test,
-                data_frame_measurement_name=MEAS,
-                data_frame_tag_columns=["product"],
-                data_frame_timestamp_column="event_ts",
-            )
-        print("[SMOKE] OK: single row written")
-    except Exception as e:
-        import traceback; traceback.print_exc()
-        print("[SMOKE] FAIL:", e)
-
-# 先只跑煙囪測試（要測完整流程時把下一行註解掉）
-# smoke_test_influx();  import sys; sys.exit(0)
-
-#if __name__ == "__main__":
-#    main()
-
-# ============================================================
-# 🚀 主程式入口（支援只匯新檔 / 全量重匯 / SHA1 嚴格去重）
-# ============================================================
-if __name__ == "__main__":
-    import argparse
-
-    # 參數設定
-    ap = argparse.ArgumentParser(description="Arcsight CSV 匯入 InfluxDB 工具")
-    ap.add_argument(
-        "--dir",
-        default="downloads",
-        help="要匯入的 CSV 根資料夾（預設：downloads）"
-    )
-    ap.add_argument(
-        "--all",
-        action="store_true",
-        help="忽略 checkpoint，強制重新匯入所有檔案"
-    )
-    ap.add_argument(
-        "--hash",
-        action="store_true",
-        help="用 SHA1 嚴格去重（同名但內容不同也會重匯）"
-    )
-
-    args = ap.parse_args()
-
-    # only_new = True 表示「只匯新檔」；若加上 --all 則變 False（全量重匯）
-    only_new = not args.all
-    check_hash = args.hash
-    input_dir = args.dir
-
-    print("===============================================")
-    print(f"📁 匯入資料夾：{input_dir}")
-    print(f"🆕 只匯未匯入檔案：{only_new}")
-    print(f"🔐 用 SHA1 嚴格比對內容：{check_hash}")
-    print("===============================================")
-
-    # 執行主流程
-    main(input_dir=input_dir, only_new=only_new, check_hash=check_hash)

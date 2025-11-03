@@ -1,102 +1,100 @@
-from datetime import datetime, timezone
-from zoneinfo import ZoneInfo
-import re
-import numpy as np
+# --- import checkpoint state (SQLite) ---
+import sqlite3, hashlib, time
+from pathlib import Path
 
-_EPOCH_RE = re.compile(r"^\d{9,}$")  # 9 位以上的純數字，就當作 epoch
+STATE_DB = Path("import_state.sqlite")
 
-def _epoch_to_utc_ts(v: float) -> pd.Timestamp | pd.NaT:
+def _state_db():
+    conn = sqlite3.connect(STATE_DB)
+    conn.execute("""
+    CREATE TABLE IF NOT EXISTS files (
+        path TEXT PRIMARY KEY,
+        size INTEGER,
+        mtime_ns INTEGER,
+        sha1 TEXT,
+        rows_written INTEGER,
+        last_seen INTEGER
+    )
+    """)
+    return conn
+
+def file_sha1(p: Path, block=1024*1024) -> str:
+    h = hashlib.sha1()
+    with p.open("rb") as f:
+        while True:
+            b = f.read(block)
+            if not b: break
+            h.update(b)
+    return h.hexdigest()
+
+def already_imported(p: Path, *, use_hash: bool = False) -> bool:
+    """回傳 True = 已成功匯入且檔案未變更"""
+    st = p.stat()
+    conn = _state_db()
+    cur = conn.execute("SELECT size, mtime_ns, sha1 FROM files WHERE path=?", (str(p),))
+    row = cur.fetchone()
+    conn.close()
+    if not row:
+        return False
+    size, mtime_ns, sha1 = row
+    if st.st_size != size or st.st_mtime_ns != mtime_ns:
+        return False
+    if use_hash:
+        # 更嚴謹：比對 sha1
+        return sha1 == file_sha1(p)
+    return True
+
+def record_success(p: Path, rows_written: int, *, save_hash: bool = False):
+    st = p.stat()
+    sha1 = file_sha1(p) if save_hash else None
+    conn = _state_db()
+    conn.execute(
+        "INSERT OR REPLACE INTO files(path,size,mtime_ns,sha1,rows_written,last_seen) VALUES (?,?,?,?,?,?)",
+        (str(p), st.st_size, st.st_mtime_ns, sha1, rows_written, int(time.time()))
+    )
+    conn.commit()
+    conn.close()
+
+
+
+
+# 例：你原本
+# for path in sorted(input_dir.glob("*.csv")):
+#     rows = parse_csv_generic(path) ...
+#     write_to_influx(...)
+
+# 改成：
+def iter_input_files(root: Path):
+    # 你原本的找檔邏輯都可以放這
+    for p in sorted(root.rglob("*.csv")):
+        yield p
+
+ONLY_NEW = True         # 預設只匯未匯入過的新檔
+CHECK_HASH = False      # 如需更精準去重，設 True
+
+total_rows = 0
+for path in iter_input_files(Path(INPUT_DIR)):   # 依你原本的變數名稱替換
+    if ONLY_NEW and already_imported(path, use_hash=CHECK_HASH):
+        print(f"[SKIP] {path.name} (already imported, unchanged)")
+        continue
+
     try:
-        v = float(v)
-    except Exception:
-        return pd.NaT
-    # 自動判斷單位：ns / ms / s
-    if v > 1e14:        # ns
-        secs = v / 1_000_000_000.0
-    elif v > 1e11:      # ms
-        secs = v / 1_000.0
-    else:               # s
-        secs = v
-    return pd.Timestamp(datetime.fromtimestamp(secs, tz=timezone.utc))
+        df = parse_csv_generic(path)       # 你現有的解析流程
+        if df is None or df.empty:
+            print(f"[WARN] no rows parsed: {path.name}")
+            continue
 
-def to_ts(s: pd.Series) -> pd.Series:
-    """把各種時間格式轉成『UTC 時區的 pandas.Timestamp』。
-       規則：
-       1) 純數字 → epoch（自動判斷 s/ms/ns）
-       2) 有時區的字串（含 Z 或 ±HH:MM）→ 直接轉成 UTC
-       3) 沒時區的字串 → 視為 Asia/Taipei 後轉成 UTC
-    """
-    if s is None:
-        return pd.Series(pd.NaT, index=s.index)
+        rows_before = len(df)
+        write_to_influx(cli, BUCKET, MEASUREMENT, df)   # 你現有的寫入函式
+        total_rows += rows_before
 
-    ss = s.astype(str).str.strip()
+        # ★ 記錄成功（下次看到同檔就跳過）
+        record_success(path, rows_before, save_hash=CHECK_HASH)
+        print(f"[OK] wrote rows={rows_before} file={path.name}")
 
-    # 1) 先處理純 epoch
-    is_epoch = ss.str.match(_EPOCH_RE)
-    out = pd.Series(pd.NaT, index=ss.index, dtype="datetime64[ns, UTC]")
-    if is_epoch.any():
-        out.loc[is_epoch] = ss[is_epoch].apply(_epoch_to_utc_ts)
+    except Exception as e:
+        print(f"[ERROR] file={path.name} msg={e}")
+        # 失敗不記錄，保留下次再試
+        continue
 
-    # 2) 其餘當作日期字串
-    others = ~is_epoch
-    if others.any():
-        # 2a) 先嘗試解析（不強制加 UTC），保留原有時區
-        parsed = pd.to_datetime(ss[others], errors="coerce", utc=False, infer_datetime_format=True)
-
-        if parsed.notna().any():
-            # 有時區資訊 → 轉 UTC
-            has_tz = parsed.dt.tz.notna()
-            if has_tz.any():
-                out.loc[others[others].index[has_tz]] = parsed[has_tz].dt.tz_convert("UTC")
-
-            # 沒時區資訊 → 當作台北本地，再轉 UTC
-            no_tz = ~has_tz
-            if no_tz.any():
-                localized = parsed[no_tz].dt.tz_localize(ZoneInfo("Asia/Taipei"), nonexistent="shift_forward", ambiguous="NaT")
-                out.loc[others[others].index[no_tz]] = localized.dt.tz_convert("UTC")
-
-    return out
-
-
-
-
-df["event_ts"] = pd.to_datetime(datetime.fromtimestamp(path.stat().st_mtime, tz=timezone.utc))
-
-
-
-
-from(bucket: "SOC")
-  |> range(start: -6h)
-  |> filter(fn: (r) => r._measurement == "arcsight_event")
-  |> sort(columns: ["_time"], desc: true)
-  |> limit(n: 3)
-
-
-
-
-
-latest =
-  from(bucket: "SOC")
-    |> range(start: -1d)
-    |> filter(fn: (r) => r._measurement == "arcsight_event")
-    |> sort(columns: ["_time"], desc: true)
-    |> limit(n: 1)
-
-latest
-  |> map(fn: (r) => ({
-        r with delta_sec: int(
-          v: (float(v: uint(v: now())) - float(v: uint(v: r._time))) / 1000000000.0
-        )
-      }))
-
-
-
-
-
-from(bucket: "SOC")
-  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)
-  |> filter(fn: (r) => r._measurement == "arcsight_event")
-  |> filter(fn: (r) => r._field == "count")
-  |> map(fn: (r) => ({ r with _value: float(v: r._value) }))
-  |> aggregateWindow(every: v.windowPeriod, fn: sum, createEmpty: false)
-  |> group(columns: ["_field"])
+print(f"[SUMMARY] total_rows={total_rows}")

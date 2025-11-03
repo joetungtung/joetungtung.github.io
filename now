@@ -1,100 +1,39 @@
-# --- import checkpoint state (SQLite) ---
-import sqlite3, hashlib, time
-from pathlib import Path
+# ============================================================
+# 🚀 主程式入口（支援只匯新檔 / 全量重匯 / SHA1 嚴格去重）
+# ============================================================
+if __name__ == "__main__":
+    import argparse
 
-STATE_DB = Path("import_state.sqlite")
-
-def _state_db():
-    conn = sqlite3.connect(STATE_DB)
-    conn.execute("""
-    CREATE TABLE IF NOT EXISTS files (
-        path TEXT PRIMARY KEY,
-        size INTEGER,
-        mtime_ns INTEGER,
-        sha1 TEXT,
-        rows_written INTEGER,
-        last_seen INTEGER
+    # 參數設定
+    ap = argparse.ArgumentParser(description="Arcsight CSV 匯入 InfluxDB 工具")
+    ap.add_argument(
+        "--dir",
+        default="downloads",
+        help="要匯入的 CSV 根資料夾（預設：downloads）"
     )
-    """)
-    return conn
-
-def file_sha1(p: Path, block=1024*1024) -> str:
-    h = hashlib.sha1()
-    with p.open("rb") as f:
-        while True:
-            b = f.read(block)
-            if not b: break
-            h.update(b)
-    return h.hexdigest()
-
-def already_imported(p: Path, *, use_hash: bool = False) -> bool:
-    """回傳 True = 已成功匯入且檔案未變更"""
-    st = p.stat()
-    conn = _state_db()
-    cur = conn.execute("SELECT size, mtime_ns, sha1 FROM files WHERE path=?", (str(p),))
-    row = cur.fetchone()
-    conn.close()
-    if not row:
-        return False
-    size, mtime_ns, sha1 = row
-    if st.st_size != size or st.st_mtime_ns != mtime_ns:
-        return False
-    if use_hash:
-        # 更嚴謹：比對 sha1
-        return sha1 == file_sha1(p)
-    return True
-
-def record_success(p: Path, rows_written: int, *, save_hash: bool = False):
-    st = p.stat()
-    sha1 = file_sha1(p) if save_hash else None
-    conn = _state_db()
-    conn.execute(
-        "INSERT OR REPLACE INTO files(path,size,mtime_ns,sha1,rows_written,last_seen) VALUES (?,?,?,?,?,?)",
-        (str(p), st.st_size, st.st_mtime_ns, sha1, rows_written, int(time.time()))
+    ap.add_argument(
+        "--all",
+        action="store_true",
+        help="忽略 checkpoint，強制重新匯入所有檔案"
     )
-    conn.commit()
-    conn.close()
+    ap.add_argument(
+        "--hash",
+        action="store_true",
+        help="用 SHA1 嚴格去重（同名但內容不同也會重匯）"
+    )
 
+    args = ap.parse_args()
 
+    # only_new = True 表示「只匯新檔」；若加上 --all 則變 False（全量重匯）
+    only_new = not args.all
+    check_hash = args.hash
+    input_dir = args.dir
 
+    print("===============================================")
+    print(f"📁 匯入資料夾：{input_dir}")
+    print(f"🆕 只匯未匯入檔案：{only_new}")
+    print(f"🔐 用 SHA1 嚴格比對內容：{check_hash}")
+    print("===============================================")
 
-# 例：你原本
-# for path in sorted(input_dir.glob("*.csv")):
-#     rows = parse_csv_generic(path) ...
-#     write_to_influx(...)
-
-# 改成：
-def iter_input_files(root: Path):
-    # 你原本的找檔邏輯都可以放這
-    for p in sorted(root.rglob("*.csv")):
-        yield p
-
-ONLY_NEW = True         # 預設只匯未匯入過的新檔
-CHECK_HASH = False      # 如需更精準去重，設 True
-
-total_rows = 0
-for path in iter_input_files(Path(INPUT_DIR)):   # 依你原本的變數名稱替換
-    if ONLY_NEW and already_imported(path, use_hash=CHECK_HASH):
-        print(f"[SKIP] {path.name} (already imported, unchanged)")
-        continue
-
-    try:
-        df = parse_csv_generic(path)       # 你現有的解析流程
-        if df is None or df.empty:
-            print(f"[WARN] no rows parsed: {path.name}")
-            continue
-
-        rows_before = len(df)
-        write_to_influx(cli, BUCKET, MEASUREMENT, df)   # 你現有的寫入函式
-        total_rows += rows_before
-
-        # ★ 記錄成功（下次看到同檔就跳過）
-        record_success(path, rows_before, save_hash=CHECK_HASH)
-        print(f"[OK] wrote rows={rows_before} file={path.name}")
-
-    except Exception as e:
-        print(f"[ERROR] file={path.name} msg={e}")
-        # 失敗不記錄，保留下次再試
-        continue
-
-print(f"[SUMMARY] total_rows={total_rows}")
+    # 執行主流程
+    main(input_dir=input_dir, only_new=only_new, check_hash=check_hash)

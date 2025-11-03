@@ -1,39 +1,80 @@
-# ============================================================
-# 🚀 主程式入口（支援只匯新檔 / 全量重匯 / SHA1 嚴格去重）
-# ============================================================
-if __name__ == "__main__":
-    import argparse
+# ======== Robust checkpoint (SQLite) ========
+import sqlite3, hashlib, time
+from pathlib import Path
 
-    # 參數設定
-    ap = argparse.ArgumentParser(description="Arcsight CSV 匯入 InfluxDB 工具")
-    ap.add_argument(
-        "--dir",
-        default="downloads",
-        help="要匯入的 CSV 根資料夾（預設：downloads）"
+# 1) 確保 DB 固定放在程式同資料夾，不受目前工作目錄影響
+STATE_DB = Path(__file__).with_name("import_state.sqlite")
+
+def _state_db():
+    STATE_DB.parent.mkdir(parents=True, exist_ok=True)
+    conn = sqlite3.connect(STATE_DB)
+    conn.execute("""
+    CREATE TABLE IF NOT EXISTS files (
+        path TEXT PRIMARY KEY,      -- 使用『絕對路徑』字串
+        size INTEGER,
+        mtime_ns INTEGER,
+        sha1 TEXT,
+        rows_written INTEGER,
+        last_seen INTEGER
     )
-    ap.add_argument(
-        "--all",
-        action="store_true",
-        help="忽略 checkpoint，強制重新匯入所有檔案"
+    """)
+    return conn
+
+def _key(p: Path) -> str:
+    # 2) 以「絕對路徑」作為主鍵，避免相對路徑/分隔符差異
+    try:
+        return str(p.resolve())
+    except Exception:
+        return str(p.absolute())
+
+def file_sha1(p: Path, block=1024*1024) -> str:
+    h = hashlib.sha1()
+    with p.open("rb") as f:
+        while True:
+            b = f.read(block)
+            if not b: break
+            h.update(b)
+    return h.hexdigest()
+
+def already_imported(p: Path, *, use_hash: bool = False) -> bool:
+    st = p.stat()
+    key = _key(p)
+    conn = _state_db()
+    cur = conn.execute("SELECT size, mtime_ns, sha1 FROM files WHERE path=?", (key,))
+    row = cur.fetchone()
+    conn.close()
+
+    if not row:
+        # 偵錯：第一次看到此檔
+        print(f"[CKPT] first time seen: {p.name}")
+        return False
+
+    size, mtime_ns, sha1 = row
+
+    # 檔案大小或 mtime 有變 → 視為新檔
+    if st.st_size != size or st.st_mtime_ns != mtime_ns:
+        print(f"[CKPT] changed: {p.name} (size/mtime differ)")
+        return False
+
+    # 若開啟 use_hash → 內容比對
+    if use_hash:
+        cur_sha = file_sha1(p)
+        if sha1 != cur_sha:
+            print(f"[CKPT] changed: {p.name} (sha1 differ)")
+            return False
+
+    print(f"[CKPT] unchanged: {p.name} → SKIP")
+    return True
+
+def record_success(p: Path, rows_written: int, *, save_hash: bool = False):
+    st = p.stat()
+    key = _key(p)
+    sha1 = file_sha1(p) if save_hash else None
+    conn = _state_db()
+    conn.execute(
+        "INSERT OR REPLACE INTO files(path,size,mtime_ns,sha1,rows_written,last_seen) VALUES (?,?,?,?,?,?)",
+        (key, st.st_size, st.st_mtime_ns, sha1, rows_written, int(time.time()))
     )
-    ap.add_argument(
-        "--hash",
-        action="store_true",
-        help="用 SHA1 嚴格去重（同名但內容不同也會重匯）"
-    )
-
-    args = ap.parse_args()
-
-    # only_new = True 表示「只匯新檔」；若加上 --all 則變 False（全量重匯）
-    only_new = not args.all
-    check_hash = args.hash
-    input_dir = args.dir
-
-    print("===============================================")
-    print(f"📁 匯入資料夾：{input_dir}")
-    print(f"🆕 只匯未匯入檔案：{only_new}")
-    print(f"🔐 用 SHA1 嚴格比對內容：{check_hash}")
-    print("===============================================")
-
-    # 執行主流程
-    main(input_dir=input_dir, only_new=only_new, check_hash=check_hash)
+    conn.commit()
+    conn.close()
+    print(f"[CKPT] recorded: {p.name} rows={rows_written}, sha={'yes' if save_hash else 'no'}")

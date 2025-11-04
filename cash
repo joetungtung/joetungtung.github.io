@@ -1,52 +1,29 @@
-from datetime import datetime, timezone
-from zoneinfo import ZoneInfo  # Python 3.9+ 內建
-
-# 假設 End Time 是 "2025-10-23 16:43:19"
-end_time_str = row["End Time"]
-
-# 1️⃣ 明確告訴 Python 這是台北時間
-local_dt = datetime.strptime(end_time_str, "%Y-%m-%d %H:%M:%S").replace(tzinfo=ZoneInfo("Asia/Taipei"))
-
-# 2️⃣ 轉成 UTC
-utc_dt = local_dt.astimezone(timezone.utc)
-
-# 3️⃣ 寫入 Influx 時用 UTC-aware datetime
-point = (
-    Point("arcsight_event")
-    .tag("device_name", device_name)
-    .field("count", int(count))
-    .time(utc_dt)   # ✅ 一定要用 UTC-aware 時間
-)
-
-write_api.write(bucket="SOC", record=point)
-
-
-
-
-from(bucket: "SOC")
-  |> range(start: -1h)
-  |> filter(fn: (r) => r._measurement == "arcsight_event")
-  |> limit(n: 5)
-
-
-
-
-
-latest =
-  from(bucket: "SOC")
-    |> range(start: -50y, stop: time(v: "2100-01-01T00:00:00Z"))
-    |> filter(fn: (r) => r._measurement == "arcsight_event")
-    |> sort(columns: ["_time"], desc: true)
-    |> limit(n: 1)
-
-// delta_sec > 0 代表資料在「過去」；delta_sec < 0 代表資料在「未來」
-latest
-  |> map(fn: (r) => ({
-        r with
-        delta_sec: int(
-          v: (
-            float(v: uint(v: now())) - float(v: uint(v: r._time))
-          ) / 1000000000.0
-        )
-      }))
-  |> yield(name: "now_minus_time_sec")
+soc_pipeline/
+├─ venv/                         # 建議建立虛擬環境
+├─ .env                          # Influx 與共用設定（見下）
+├─ requirements.txt
+├─ run.bat                       # Windows 啟動批次檔（排程用）
+├─ logs/
+│   ├─ mail_fetch.log
+│   └─ ingest.log
+├─ data/
+│   ├─ fw/
+│   ├─ waf/
+│   └─ radware/
+├─ mail_fetcher/
+│   ├─ __init__.py
+│   ├─ mail_fetcher.py           # 下載信件附件（IMAP/EWS可替換）
+│   ├─ config.ini                # 郵件與來源/資料夾對應
+│   └─ rules.py                  # 主旨/寄件者 → 類型 (fw/waf/radware) 規則
+└─ ingest/
+    ├─ __init__.py
+    ├─ main.py                   # 載入 plugins → 寫入 Influx
+    ├─ config.py
+    ├─ influx_writer.py
+    ├─ schema.py
+    ├─ utils.py
+    └─ plugins/
+        ├─ base.py
+        ├─ firewall.py
+        ├─ waf.py
+        └─ radware.py

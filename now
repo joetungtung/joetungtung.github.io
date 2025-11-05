@@ -1,27 +1,244 @@
 # -*- coding: utf-8 -*-
+"""
+MailPlugin (EWS) — 下載 CSV 附件 → 存檔
+可直接在 Windows / Linux 執行，支援主旨過濾、未讀、近 N 天等條件。
+"""
+
+from __future__ import annotations
+import os
+import re
+import sys
+import ssl
+import time
 import logging
+from dataclasses import dataclass
+from datetime import datetime, timedelta
 from pathlib import Path
-from dotenv import load_dotenv
-from mail_fetcher.mail_plugin_ews import MailPluginEWS, settings_from_env
+from typing import Iterable, Optional
 
-def setup_logging():
-    Path("logs").mkdir(exist_ok=True)
-    logging.basicConfig(
-        filename="logs/mail_fetch.log",
-        level=logging.INFO,
-        format="[%(asctime)s] %(levelname)s %(message)s",
+import pytz
+from exchangelib import (
+    Account, Credentials, Configuration, DELEGATE, FaultTolerance,
+    Message, FileAttachment, OAuth2Credentials, EWSTimeZone, Version
+)
+from exchangelib.errors import RateLimitError, ErrorTooManyObjectsOpened
+from exchangelib.protocol import BaseProtocol, NoVerifyHTTPAdapter
+from exchangelib.folders import Folder
+from exchangelib.queryset import QuerySet
+
+# ---------- #1 Logger 設定 ----------
+logger = logging.getLogger("mail_plugin_ews")
+if not logger.handlers:
+    h = logging.StreamHandler(sys.stdout)
+    fmt = logging.Formatter("[%(asctime)s] %(levelname)s %(message)s")
+    h.setFormatter(fmt)
+    logger.addHandler(h)
+logger.setLevel(logging.INFO)
+
+
+# ---------- #2 設定資料類型 ----------
+@dataclass
+class MailPluginSettings:
+    server: str
+    username: str
+    password: str
+    primary_smtp: str
+    folder_path: str = ""
+    subject_include: str = ""
+    only_unread: bool = True
+    since_days: int = 7
+    save_dir: str = "downloads/csv"
+    move_processed_to: str = ""
+    mark_read_after: bool = True
+    verify_ssl: bool = True
+    timeout_sec: int = 60
+    max_items: int = 500
+
+
+# ---------- #3 主 Plugin ----------
+class MailPluginEWS:
+    def __init__(self, settings: MailPluginSettings):
+        self.s = settings
+
+        # SSL 驗證控制（測試環境若自簽可關閉，但不建議）
+        if not self.s.verify_ssl:
+            BaseProtocol.HTTP_ADAPTER_CLS = NoVerifyHTTPAdapter
+            ssl._create_default_https_context = ssl._create_unverified_context  # noqa
+
+        # 設定 Exchange 連線
+        creds = Credentials(username=self.s.username, password=self.s.password)
+        config = Configuration(server=self.s.server, credentials=creds, retry_policy=FaultTolerance())
+        self.account = Account(
+            primary_smtp_address=self.s.primary_smtp,
+            config=config,
+            autodiscover=False,
+            access_type=DELEGATE,
+        )
+
+        # 時區（以台北為主；Exchange 會自動轉換）
+        self.tz = EWSTimeZone.timezone("Asia/Taipei")
+
+        # 準備路徑
+        self.save_path = Path(self.s.save_dir).expanduser().resolve()
+        self.save_path.mkdir(parents=True, exist_ok=True)
+
+        logger.info("EWS 連線完成：%s", self.s.server)
+        logger.info("目標儲存路徑：%s", str(self.save_path))
+
+    # ---------- #4 取資料夾 ----------
+    def _get_folder(self) -> Folder:
+        if not self.s.folder_path:
+            return self.account.inbox
+        parts = [p for p in self.s.folder_path.split("/") if p]
+        folder: Folder = self.account.root / "Top of Information Store"
+        for p in parts:
+            folder = folder / p
+        return folder
+
+    # ---------- #5 建立查詢條件 ----------
+    def _build_queryset(self, folder: Folder) -> QuerySet:
+        qs = folder.all()
+        # 未讀
+        if self.s.only_unread:
+            qs = qs.filter(is_read=False)
+
+        # 近 N 天
+        if self.s.since_days and self.s.since_days > 0:
+            dt_since = datetime.now(self.tz.localzone()) - timedelta(days=self.s.since_days)
+            qs = qs.filter(datetime_received__gte=dt_since)
+
+        # 主旨過濾（regex）
+        if self.s.subject_include:
+            pattern = re.compile(self.s.subject_include, re.IGNORECASE)
+            qs = qs.only("subject", "datetime_received", "is_read", "attachments")
+            # exchangelib 不支援直接 regex server-side，改為 client-side filter
+            return QuerySet(account=self.account, folder=folder, q=qs.q, only=qs.only).iterator().filter(
+                lambda m: isinstance(m, Message) and pattern.search(m.subject or "")
+            )
+
+        # 預設欄位
+        qs = qs.only("subject", "datetime_received", "is_read", "attachments")
+        return qs
+
+    # ---------- #6 附件存檔 ----------
+    def _save_csv_attachments(self, msg: Message) -> int:
+        n = 0
+        for att in msg.attachments or []:
+            if isinstance(att, FileAttachment):
+                filename = att.name or "attachment"
+                if not filename.lower().endswith(".csv"):
+                    continue
+                safe_name = self._safe_filename(msg, filename)
+                out_path = self.save_path / safe_name
+                with open(out_path, "wb") as f:
+                    f.write(att.content)
+                n += 1
+                logger.info("已存檔：%s  ←  %s", out_path.name, (msg.subject or "").strip())
+        return n
+
+    # ---------- #7 附件命名去衝突 ----------
+    def _safe_filename(self, msg: Message, filename: str) -> str:
+        ts = msg.datetime_received.astimezone(self.tz).strftime("%Y%m%d_%H%M%S")
+        base = re.sub(r"[\\/:*?\"<>|]+", "_", Path(filename).stem)[:80]
+        ext = Path(filename).suffix or ".csv"
+        candidate = f"{ts}__{base}{ext}"
+        # 若已存在就加序號
+        i = 1
+        while (self.save_path / candidate).exists():
+            candidate = f"{ts}__{base}_{i}{ext}"
+            i += 1
+        return candidate
+
+    # ---------- #8 抓取主程序 ----------
+    def fetch_and_save_csv(self) -> int:
+        folder = self._get_folder()
+        logger.info("掃描資料夾：%s", folder.absolute_path)
+
+        qs = self._build_queryset(folder)
+        count_saved = 0
+        processed_ids = []
+
+        try:
+            # 取件加上上限，避免撈爆
+            iterable = qs.order_by("-datetime_received")
+            fetched = 0
+
+            for item in iterable:
+                if not isinstance(item, Message):
+                    continue
+                fetched += 1
+                if fetched > max(1, self.s.max_items):
+                    logger.warning("已達 max_items=%d，上限停止。", self.s.max_items)
+                    break
+
+                saved = self._save_csv_attachments(item)
+                if saved and self.s.mark_read_after and not item.is_read:
+                    item.is_read = True
+                    item.save(update_fields=["is_read"])
+                if saved and self.s.move_processed_to:
+                    self._move_to_subfolder(item, self.s.move_processed_to)
+
+                if saved:
+                    count_saved += saved
+                    processed_ids.append(item.id)
+
+        except (RateLimitError, ErrorTooManyObjectsOpened) as e:
+            logger.error("EWS 限速或物件開啟過多：%s", e)
+        except Exception as e:
+            logger.exception("抓取過程發生例外：%s", e)
+
+        logger.info("完成。共儲存 CSV 附件數：%d", count_saved)
+        return count_saved
+
+    # ---------- #9 移動到子資料夾（Processed 等） ----------
+    def _move_to_subfolder(self, msg: Message, subfolder_name: str) -> None:
+        parent = msg.folder
+        try:
+            target = None
+            for f in parent.children.all():
+                if f.name == subfolder_name:
+                    target = f
+                    break
+            if target is None:
+                target = parent / subfolder_name
+                if not target.exists():
+                    target = parent.add_folder(subfolder_name)
+            msg.move(to_folder=target)
+            logger.info("郵件已移動至：%s", target.absolute_path)
+        except Exception as e:
+            logger.error("移動郵件失敗：%s", e)
+
+
+# ---------- #10 從環境變數載入設定 ----------
+def settings_from_env() -> MailPluginSettings:
+    def _get_bool(name: str, default: bool) -> bool:
+        v = os.getenv(name)
+        if v is None or v == "":
+            return default
+        return v.strip().lower() in ("1", "true", "yes", "y", "on")
+
+    def _get_int(name: str, default: int) -> int:
+        v = os.getenv(name)
+        if not v:
+            return default
+        try:
+            return int(v)
+        except ValueError:
+            return default
+
+    return MailPluginSettings(
+        server=os.getenv("MAIL_EWS_SERVER", "").strip(),
+        username=os.getenv("MAIL_USERNAME", "").strip(),
+        password=os.getenv("MAIL_PASSWORD", "").strip(),
+        primary_smtp=os.getenv("MAIL_PRIMARY_SMTP", "").strip(),
+        folder_path=os.getenv("MAIL_FOLDER_PATH", "").strip(),
+        subject_include=os.getenv("MAIL_SUBJECT_INCLUDE", "").strip(),
+        only_unread=_get_bool("MAIL_ONLY_UNREAD", True),
+        since_days=_get_int("MAIL_SINCE_DAYS", 7),
+        save_dir=os.getenv("MAIL_SAVE_DIR", "downloads/csv").strip(),
+        move_processed_to=os.getenv("MAIL_MOVE_PROCESSED_TO", "").strip(),
+        mark_read_after=_get_bool("MAIL_MARK_READ_AFTER", True),
+        verify_ssl=_get_bool("MAIL_VERIFY_SSL", True),
+        timeout_sec=_get_int("MAIL_TIMEOUT_SEC", 60),
+        max_items=_get_int("MAIL_MAX_ITEMS", 500),
     )
-    logging.getLogger().addHandler(logging.StreamHandler())  # 同步印到螢幕
-
-def main():
-    load_dotenv()
-    setup_logging()
-
-    settings = settings_from_env()
-    plugin = MailPluginEWS(settings)
-
-    saved = plugin.fetch_and_save_csv()
-    print(f"✅ Mail fetch complete. CSV saved: {saved}")
-
-if __name__ == "__main__":
-    main()

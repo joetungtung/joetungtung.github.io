@@ -1,45 +1,44 @@
-# --- GentleRetryPolicy v2: 支援伺服器秒數 + 指數回退 ---
-import time
-from exchangelib.protocol import FaultTolerance
+def fetch_and_save_csv(self) -> int:
+    folder = self._get_folder()
+    logger.info("掃描資料夾：%s", getattr(folder, "absolute_path", "Inbox"))
 
-class GentleRetryPolicy(FaultTolerance):
-    max_wait = 300  # 最多等 5 分鐘
-    base = 10       # 起始等候秒數（若伺服器沒給 seconds）
-    factor = 2.0    # 指數回退倍率
-    _tries = 0
+    # --- 只用「伺服器端可理解」的條件，避免 client-side 濾波造成多次往返 ---
+    qs = folder.filter(has_attachments=True)  # 只找有附件的信
 
-    def back_off(self, seconds=None, **kwargs):
-        if seconds is not None:
-            wait = float(seconds)
-        else:
-            wait = self.base * (self.factor ** self._tries)
-        self._tries += 1
-        wait = min(self.max_wait, wait)
-        logger.warning("伺服器要求等待 %.1f 秒以避開節流 (backoff)...", wait)
-        time.sleep(wait)
-# --- END ---
+    if self.s.only_unread:
+        qs = qs.filter(is_read=False)
 
+    if self.s.since_days and self.s.since_days > 0:
+        dt_since = datetime.now(self.tz) - timedelta(days=self.s.since_days)
+        qs = qs.filter(datetime_received__gte=dt_since)
 
+    # 極限精簡欄位：只取我們真的要用到的欄位
+    qs = qs.only("id", "subject", "datetime_received", "is_read", "attachments")
 
+    # 只看最新的，且一次只要 1 封
+    qs = qs.order_by("-datetime_received")
 
+    count_saved = 0
+    try:
+        # 以 page_size=1 取得最小往返流量
+        for item in qs.iterator(page_size=1):
+            # 保險：若 .env 設很大也強制只處理 1 封
+            if count_saved >= 1:
+                break
+            if not isinstance(item, Message):
+                continue
 
-def _get_folder(self):
-    # 空值 → 直接用 Inbox
-    if not self.s.folder_path:
-        return self.account.inbox
+            saved = self._save_csv_attachments(item)
+            if saved and self.s.mark_read_after and not item.is_read:
+                item.is_read = True
+                item.save(update_fields=["is_read"])
+            if saved and self.s.move_processed_to:
+                self._move_to_subfolder(item, self.s.move_processed_to)
 
-    # 標準化（去空白）
-    path = [p for p in self.s.folder_path.split("/") if p]
+            count_saved += saved
 
-    # 若以 Inbox 開頭，就從 account.inbox 往下找（最省流量）
-    if path and path[0].lower() == "inbox":
-        folder = self.account.inbox
-        for p in path[1:]:
-            folder = folder / p
-        return folder
+    except Exception as e:
+        logger.exception("抓取過程發生例外：%s", e)
 
-    # 其餘情況才用 root 走（成本較高）
-    folder = self.account.root
-    for p in path:
-        folder = folder / p
-    return folder
+    logger.info("完成。共儲存 CSV 附件數：%d", count_saved)
+    return count_saved

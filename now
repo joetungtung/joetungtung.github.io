@@ -1,44 +1,66 @@
-def fetch_and_save_csv(self) -> int:
-    folder = self._get_folder()
-    logger.info("掃描資料夾：%s", getattr(folder, "absolute_path", "Inbox"))
+import time
+import pytz
+from exchangelib.protocol import FaultTolerance, AUTH_TYPE_NTLM, BaseProtocol
+from exchangelib.version import Version, EXCHANGE_2016
 
-    # --- 只用「伺服器端可理解」的條件，避免 client-side 濾波造成多次往返 ---
-    qs = folder.filter(has_attachments=True)  # 只找有附件的信
+# 降低同時連線數，避免伺服器覺得你很吵
+BaseProtocol.SESSION_POOLSIZE = 1
 
-    if self.s.only_unread:
-        qs = qs.filter(is_read=False)
+# 減噪：測試階段若關閉 SSL 驗證，把警告也關掉（正式環境建議開啟驗證）
+if not self.s.verify_ssl:
+    import urllib3
+    urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
-    if self.s.since_days and self.s.since_days > 0:
-        dt_since = datetime.now(self.tz) - timedelta(days=self.s.since_days)
-        qs = qs.filter(datetime_received__gte=dt_since)
+# 溫和 backoff（伺服器給秒數優先；否則 10→20→40....，最多 5 分鐘）
+class GentleRetryPolicy(FaultTolerance):
+    max_wait = 300
+    base = 10
+    factor = 2.0
+    _tries = 0
+    def back_off(self, seconds=None, **kwargs):
+        if seconds is not None:
+            wait = float(seconds)
+        else:
+            wait = self.base * (self.factor ** self._tries)
+        self._tries += 1
+        wait = min(self.max_wait, wait)
+        logger.warning("伺服器要求等待 %.1f 秒以避開節流 (backoff)...", wait)
+        time.sleep(wait)
 
-    # 極限精簡欄位：只取我們真的要用到的欄位
-    qs = qs.only("id", "subject", "datetime_received", "is_read", "attachments")
+self.tz = pytz.timezone("Asia/Taipei")
 
-    # 只看最新的，且一次只要 1 封
-    qs = qs.order_by("-datetime_received")
+server = (self.s.server or "").strip()
+autodiscover = str(os.getenv("MAIL_AUTODISCOVER", "false")).lower() in ("1","true","yes","y","on")
 
-    count_saved = 0
-    try:
-        # 以 page_size=1 取得最小往返流量
-        for item in qs.iterator(page_size=1):
-            # 保險：若 .env 設很大也強制只處理 1 封
-            if count_saved >= 1:
-                break
-            if not isinstance(item, Message):
-                continue
+creds = Credentials(username=self.s.username, password=self.s.password)
 
-            saved = self._save_csv_attachments(item)
-            if saved and self.s.mark_read_after and not item.is_read:
-                item.is_read = True
-                item.save(update_fields=["is_read"])
-            if saved and self.s.move_processed_to:
-                self._move_to_subfolder(item, self.s.move_processed_to)
+if autodiscover:
+    # 路徑一：Autodiscover（有些環境這條比較順）
+    logger.info("使用 Autodiscover 連線（5.5.1 compat mode）")
+    self.account = Account(
+        primary_smtp_address=self.s.primary_smtp,
+        credentials=creds,
+        autodiscover=True,
+        access_type=DELEGATE,
+        default_timezone=self.tz,
+    )
+else:
+    # 路徑二：明確指定 server + NTLM + Exchange 版本（避免 version guess）
+    logger.info("使用 明確伺服器 連線（5.5.1 compat mode, NTLM + EXCHANGE_2016）")
+    config = Configuration(
+        server=server,                        # 只給主機名
+        credentials=creds,
+        auth_type=AUTH_TYPE_NTLM,             # 多數 on-prem EWS 走 NTLM
+        version=Version(EXCHANGE_2016),       # 避免 Version.guess() 額外呼叫
+        retry_policy=GentleRetryPolicy(),
+    )
+    self.account = Account(
+        primary_smtp_address=self.s.primary_smtp,
+        config=config,
+        autodiscover=False,
+        access_type=DELEGATE,
+        default_timezone=self.tz,
+    )
 
-            count_saved += saved
-
-    except Exception as e:
-        logger.exception("抓取過程發生例外：%s", e)
-
-    logger.info("完成。共儲存 CSV 附件數：%d", count_saved)
-    return count_saved
+logger.info("EWS 連線完成：%s", getattr(self.account.protocol, "service_endpoint", ""))
+logger.info("目標儲存路徑：%s", str(self.save_path))

@@ -1,19 +1,27 @@
-# ===== Exchange 連線 =====
-MAIL_EWS_SERVER=https://mail.company.com/EWS/Exchange.asmx
-MAIL_USERNAME=DOMAIN\\your_account
-MAIL_PASSWORD=your_password
-MAIL_PRIMARY_SMTP=your.name@company.com
+# -*- coding: utf-8 -*-
+import logging
+from pathlib import Path
+from dotenv import load_dotenv
+from mail_fetcher.mail_plugin_ews import MailPluginEWS, settings_from_env
 
-# ===== 篩選與存檔設定 =====
-MAIL_FOLDER_PATH=Inbox/Alerts
-MAIL_SUBJECT_INCLUDE=SOC|WAF|Radware|FW
-MAIL_ONLY_UNREAD=true
-MAIL_SINCE_DAYS=7
-MAIL_SAVE_DIR=data/waf            # 先指定一個目標夾；下一步我會教你自動分流
-MAIL_MOVE_PROCESSED_TO=Processed
-MAIL_MARK_READ_AFTER=true
+def setup_logging():
+    Path("logs").mkdir(exist_ok=True)
+    logging.basicConfig(
+        filename="logs/mail_fetch.log",
+        level=logging.INFO,
+        format="[%(asctime)s] %(levelname)s %(message)s",
+    )
+    logging.getLogger().addHandler(logging.StreamHandler())  # 同步印到螢幕
 
-# ===== 安全與連線行為 =====
-MAIL_VERIFY_SSL=true
-MAIL_TIMEOUT_SEC=60
-MAIL_MAX_ITEMS=300
+def main():
+    load_dotenv()
+    setup_logging()
+
+    settings = settings_from_env()
+    plugin = MailPluginEWS(settings)
+
+    saved = plugin.fetch_and_save_csv()
+    print(f"✅ Mail fetch complete. CSV saved: {saved}")
+
+if __name__ == "__main__":
+    main()

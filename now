@@ -1,13 +1,24 @@
-from exchangelib.errors import RateLimitError
-from exchangelib.protocol import BaseProtocol, FaultTolerance
+# --- BEGIN: robust Configuration (server or full URL) + gentle throttling ---
 import time
+from exchangelib.protocol import FaultTolerance
 
-# 調整節流參數
+# 節流時溫和等待，避免被 EWS 狂退票
 class GentleRetryPolicy(FaultTolerance):
-    max_wait = 120  # 最多等待 120 秒
+    max_wait = 120  # 最多等 120 秒
     def back_off(self, **kwargs):
-        wait = min(self.max_wait, kwargs.get("seconds", 10))
-        logger.warning("伺服器要求等待 %.1f 秒以避開節流...", wait)
+        wait = min(self.max_wait, float(kwargs.get("seconds", 10)))
+        logger.warning("伺服器要求等待 %.1f 秒以避開節流(backoff)...", wait)
         time.sleep(wait)
 
-config = Configuration(server=server_or_url, credentials=creds, retry_policy=GentleRetryPolicy())
+server_or_url = (self.s.server or "").strip()
+
+cfg_kwargs = dict(credentials=creds, retry_policy=GentleRetryPolicy())
+
+# 若填完整 URL（含 http/https），改用 service_endpoint；否則用 server
+if server_or_url.lower().startswith(("http://", "https://")):
+    cfg_kwargs["service_endpoint"] = server_or_url
+else:
+    cfg_kwargs["server"] = server_or_url
+
+config = Configuration(**cfg_kwargs)
+# --- END ---

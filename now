@@ -1,90 +1,22 @@
-def write_to_influx(df: pd.DataFrame) -> bool:
-    """
-    僅寫入：
-      - time: event_ts (tz-aware UTC)
-      - tags: TAG_COLS 中有的欄位（全部轉字串；缺值用 None）
-      - fields: bytes_in/bytes_out/src_port/dst_port/flex_num1/count（全部 float64）
-    並移除一切 pd.NA/np.nan/布林 dtype，避免 400 / NA ambiguous。
-    """
-    if df is None or df.empty:
-        print("[INFO] nothing to write.")
-        return True
+# -*- coding: utf-8 -*-
+import logging
+from pathlib import Path
+from dotenv import load_dotenv
 
-    try:
-        SAFE_FIELDS = ["bytes_in","bytes_out","src_port","dst_port","flex_num1","count"]
+def setup_logging():
+    Path("logs").mkdir(exist_ok=True)
+    logging.basicConfig(
+        filename="logs/mail_fetch.log",
+        level=logging.INFO,
+        format="[%(asctime)s] %(levelname)s %(message)s",
+    )
+    logging.getLogger().addHandler(logging.StreamHandler())  # 同步印到螢幕
 
-        # 只留需要的欄位
-        keep = (["event_ts"]
-                + [c for c in TAG_COLS if c in df.columns]
-                + [c for c in SAFE_FIELDS if c in df.columns])
-        df = df.loc[:, [c for c in keep if c in df.columns]].copy()
+def main():
+    load_dotenv()
+    setup_logging()
+    logging.info("Framework boot OK. (No plugins yet)")
+    print("✅ Framework OK — 下一步我們會接上 MailPluginEWS")
 
-        # --- 時間欄位 ---
-        df["event_ts"] = pd.to_datetime(df["event_ts"], errors="coerce", utc=True)
-        df = df[~df["event_ts"].isna()].copy()
-        if df.empty:
-            print("[WARN] all rows have invalid event_ts → skip write")
-            return True
-
-        # --- 數值欄位：全部轉成 float64，轉不動的變 NaN，之後補上 count=1 ---
-        for c in SAFE_FIELDS:
-            if c in df.columns:
-                df[c] = pd.to_numeric(df[c], errors="coerce").astype("float64")
-
-        if not any(c in df.columns for c in SAFE_FIELDS):
-            df["count"] = 1.0
-        else:
-            # 若所有數值欄都是 NaN → 補 count=1
-            num_cols = [c for c in SAFE_FIELDS if c in df.columns]
-            mask_all_nan = df[num_cols].isna().all(axis=1)
-            if mask_all_nan.any():
-                df.loc[mask_all_nan, "count"] = 1.0
-
-        # --- 標籤欄位：一律轉成「字串或 None」；禁止布林 dtype / pd.NA ---
-        for c in [c for c in TAG_COLS if c in df.columns]:
-            # 先把 pd.NA/NaN 變成 None
-            df[c] = df[c].astype(object)
-            df.loc[pd.isna(df[c]), c] = None
-            # 其他值一律轉字串
-            df[c] = df[c].apply(lambda x: (str(x) if x is not None else None))
-
-        # --- 全表再做一次保險：把任何殘留的 pd.NA / np.nan 變 None，移除布林 dtype ---
-        df = df.astype(object).where(pd.notna(df), None)
-        for c in df.columns:
-            if pd.api.types.is_bool_dtype(df[c]):
-                df[c] = df[c].apply(lambda x: "true" if bool(x) else "false")
-
-        # --- 寫入（分批） ---
-        from math import ceil
-        BATCH = 10_000
-        with InfluxDBClient(url=INFLUX_URL, org=ORG, token=TOKEN, timeout=300_000) as cli:
-            w = cli.write_api(write_options=SYNCHRONOUS)
-            total = len(df); batches = ceil(total / BATCH)
-            tag_cols = [c for c in TAG_COLS if c in df.columns]
-
-            for i in range(batches):
-                chunk = df.iloc[i*BATCH:(i+1)*BATCH]
-
-                try:
-                    w.write(
-                        bucket=BUCKET,
-                        org=ORG,
-                        record=chunk,
-                        data_frame_measurement_name=MEAS,
-                        data_frame_tag_columns=tag_cols,
-                        data_frame_timestamp_column="event_ts",
-                    )
-                    print(f"[OK] wrote chunk {i+1}/{batches} rows={len(chunk)}")
-                except Exception as e:
-                    # 400 時把第一行序列化內容印出來方便定位
-                    import traceback; traceback.print_exc()
-                    print("[DEBUG] failed chunk head(1) as dict:", chunk.head(1).to_dict(orient="records"))
-                    raise
-
-        print(f"[OK] wrote total {len(df)} rows to {BUCKET}/{MEAS}")
-        return True
-
-    except Exception as e:
-        import traceback; traceback.print_exc()
-        print(f"[ERROR] write influx failed: {e}")
-        return False
+if __name__ == "__main__":
+    main()

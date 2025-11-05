@@ -1,24 +1,12 @@
-# --- BEGIN: robust Configuration (server or full URL) + gentle throttling ---
+# --- GentleRetryPolicy 正確版本 ---
 import time
 from exchangelib.protocol import FaultTolerance
 
-# 節流時溫和等待，避免被 EWS 狂退票
 class GentleRetryPolicy(FaultTolerance):
-    max_wait = 120  # 最多等 120 秒
-    def back_off(self, **kwargs):
-        wait = min(self.max_wait, float(kwargs.get("seconds", 10)))
-        logger.warning("伺服器要求等待 %.1f 秒以避開節流(backoff)...", wait)
+    """溫和節流等待策略"""
+    max_wait = 120  # 最多等待秒數
+    def back_off(self, seconds=None, **kwargs):
+        wait = min(self.max_wait, float(seconds or 10))
+        logger.warning("伺服器要求等待 %.1f 秒以避開節流 (backoff)...", wait)
         time.sleep(wait)
-
-server_or_url = (self.s.server or "").strip()
-
-cfg_kwargs = dict(credentials=creds, retry_policy=GentleRetryPolicy())
-
-# 若填完整 URL（含 http/https），改用 service_endpoint；否則用 server
-if server_or_url.lower().startswith(("http://", "https://")):
-    cfg_kwargs["service_endpoint"] = server_or_url
-else:
-    cfg_kwargs["server"] = server_or_url
-
-config = Configuration(**cfg_kwargs)
 # --- END ---

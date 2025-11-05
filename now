@@ -1,12 +1,45 @@
-# --- GentleRetryPolicy 正確版本 ---
+# --- GentleRetryPolicy v2: 支援伺服器秒數 + 指數回退 ---
 import time
 from exchangelib.protocol import FaultTolerance
 
 class GentleRetryPolicy(FaultTolerance):
-    """溫和節流等待策略"""
-    max_wait = 120  # 最多等待秒數
+    max_wait = 300  # 最多等 5 分鐘
+    base = 10       # 起始等候秒數（若伺服器沒給 seconds）
+    factor = 2.0    # 指數回退倍率
+    _tries = 0
+
     def back_off(self, seconds=None, **kwargs):
-        wait = min(self.max_wait, float(seconds or 10))
+        if seconds is not None:
+            wait = float(seconds)
+        else:
+            wait = self.base * (self.factor ** self._tries)
+        self._tries += 1
+        wait = min(self.max_wait, wait)
         logger.warning("伺服器要求等待 %.1f 秒以避開節流 (backoff)...", wait)
         time.sleep(wait)
 # --- END ---
+
+
+
+
+
+def _get_folder(self):
+    # 空值 → 直接用 Inbox
+    if not self.s.folder_path:
+        return self.account.inbox
+
+    # 標準化（去空白）
+    path = [p for p in self.s.folder_path.split("/") if p]
+
+    # 若以 Inbox 開頭，就從 account.inbox 往下找（最省流量）
+    if path and path[0].lower() == "inbox":
+        folder = self.account.inbox
+        for p in path[1:]:
+            folder = folder / p
+        return folder
+
+    # 其餘情況才用 root 走（成本較高）
+    folder = self.account.root
+    for p in path:
+        folder = folder / p
+    return folder
